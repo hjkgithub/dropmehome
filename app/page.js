@@ -19,11 +19,12 @@ export default function Home() {
       const res = await fetch("/api/journeys", {
         cache: "no-store",
       });
+
       const data = await res.json();
 
       if (res.ok) setJourneys(data);
     } catch (error) {
-      console.error(error);
+      console.error("Loading error:", error);
     }
   }
 
@@ -40,26 +41,42 @@ export default function Home() {
     try {
       const res = await fetch("/api/journeys", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(form),
       });
 
-      const data = await res.json();
+      const text = await res.text();
 
-      if (res.ok) {
-        setMessage("Journey shared successfully!");
-        setForm({
-          name: "",
-          destination: "",
-          phone: "",
-          vehicle: "Bike",
-        });
-        loadJourneys();
-      } else {
-        setMessage(data.error || "Something went wrong");
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { error: text.slice(0, 300) };
       }
-    } catch {
-      setMessage("Unable to submit. Please try again.");
+
+      if (!res.ok) {
+        setMessage(
+          "Error " + res.status + ": " +
+          (data.error || "Submission failed")
+        );
+        return;
+      }
+
+      setMessage("Journey shared successfully!");
+
+      setForm({
+        name: "",
+        destination: "",
+        phone: "",
+        vehicle: "Bike",
+      });
+
+      loadJourneys();
+
+    } catch (error) {
+      setMessage("Network error: " + error.message);
     }
   }
 
@@ -130,4 +147,4 @@ export default function Home() {
     </main>
   );
             }
-
+            
