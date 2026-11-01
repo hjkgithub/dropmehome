@@ -2,7 +2,7 @@
 import "./global.css";
 
 export const metadata = {
-  title: "Drop me home",
+  title: "Take me home",
   description: "Share your journey with others",
 };
 
