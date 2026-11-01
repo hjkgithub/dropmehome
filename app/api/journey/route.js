@@ -52,7 +52,7 @@ export async function GET() {
     return NextResponse.json(journeys);
   } catch (error) {
     return NextResponse.json(
-      { error: error.message },
+      { error: "Unable to load journeys" },
       { status: 503 }
     );
   }
@@ -65,10 +65,18 @@ export async function POST(request) {
     const name = body.name?.trim();
     const destination = body.destination?.trim();
     const phone = body.phone?.trim();
+    const vehicle = body.vehicle?.trim();
 
-    if (!name || !destination || !phone) {
+    if (!name || !destination || !phone || !vehicle) {
       return NextResponse.json(
         { error: "All fields are required" },
+        { status: 400 }
+      );
+    }
+
+    if (!["Bike", "Car"].includes(vehicle)) {
+      return NextResponse.json(
+        { error: "Select Bike or Car" },
         { status: 400 }
       );
     }
@@ -86,13 +94,16 @@ export async function POST(request) {
 
     const journeys = await getActiveJourneys();
 
+    const now = Date.now();
+
     const newJourney = {
       id: randomUUID(),
       name,
       destination,
       phone,
-      createdAt: Date.now(),
-      expiresAt: Date.now() + 2 * 60 * 60 * 1000,
+      vehicle,
+      createdAt: now,
+      expiresAt: now + 2 * 60 * 60 * 1000,
     };
 
     journeys.unshift(newJourney);
@@ -111,9 +122,8 @@ export async function POST(request) {
     );
   } catch (error) {
     return NextResponse.json(
-      { error: error.message },
+      { error: "Unable to save journey" },
       { status: 503 }
     );
   }
-      }
-
+}
