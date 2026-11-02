@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -8,6 +9,7 @@ export default function Home() {
     destination: "",
     phone: "",
     vehicle: "Bike",
+    seatsAvailable: "1",
   });
 
   const [journeys, setJourneys] = useState([]);
@@ -70,6 +72,7 @@ export default function Home() {
         destination: "",
         phone: "",
         vehicle: "Bike",
+        seatsAvailable: "1",
       });
 
       loadJourneys();
@@ -123,6 +126,22 @@ export default function Home() {
           <option value="Car">Car</option>
         </select>
 
+        <label>Available passenger seats (excluding you)</label>
+        <input
+          type="number"
+          min="1"
+          max="10"
+          placeholder="How many passengers can you carry?"
+          value={form.seatsAvailable}
+          onChange={(e) =>
+            setForm({
+              ...form,
+              seatsAvailable: e.target.value,
+            })
+          }
+          required
+        />
+
         <button type="submit">
           Share My Journey
         </button>
@@ -138,6 +157,7 @@ export default function Home() {
           <p>Heading to: {item.destination}</p>
           <p>Phone: {item.phone}</p>
           <p>Vehicle: {item.vehicle}</p>
+          <p>Available seats: {item.seatsAvailable}</p>
           <small>
             Expires: {new Date(item.expiresAt).toLocaleString()}
           </small>
@@ -145,5 +165,4 @@ export default function Home() {
       ))}
     </main>
   );
-            }
-            
+        }
