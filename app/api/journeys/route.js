@@ -42,119 +42,127 @@ async function getActiveJourneys() {
   );
 }
 
-export async function GET() {
-  try {
-    const journeys = await getActiveJourneys();
-
-    await redisCommand([
-      "SET",
-      "journeys",
-      JSON.stringify(journeys),
-      "EX",
-      "86400",
-    ]);
-
-    return NextResponse.json(journeys);
-  } catch (error) {
-    console.error("GET journeys error:", error);
-
-    return NextResponse.json(
-      { error: "Unable to load journeys" },
-      { status: 503 }
-    );
-  }
-}
-
 export async function POST(request) {
   try {
     const body = await request.json();
 
+    const journeyId = body.journeyId?.trim();
     const name = body.name?.trim();
-    const destination = body.destination?.trim();
     const phone = body.phone?.trim();
-    const vehicle = body.vehicle?.trim();
-    const seatsAvailable = Number(body.seatsAvailable);
+    const seatsRequested = Number(body.seatsRequested);
 
-    // Validate required fields
+    // Validate request details
     if (
+      !journeyId ||
       !name ||
-      !destination ||
       !phone ||
-      !vehicle ||
-      !Number.isInteger(seatsAvailable) ||
-      seatsAvailable < 1 ||
-      seatsAvailable > 10
+      !Number.isInteger(seatsRequested) ||
+      seatsRequested < 1 ||
+      name.length > 60 ||
+      phone.length > 20
     ) {
+      return NextResponse.json(
+        { error: "Please enter valid request details" },
+        { status: 400 }
+      );
+    }
+
+    // Find the active journey
+    const journeys = await getActiveJourneys();
+
+    const journey = journeys.find(
+      (item) => item.id === journeyId
+    );
+
+    if (!journey) {
+      return NextResponse.json(
+        { error: "This journey is no longer available" },
+        { status: 404 }
+      );
+    }
+
+    // Check available seats
+    const availableSeats = Number(journey.seatsAvailable);
+
+    if (
+      !Number.isInteger(availableSeats) ||
+      seatsRequested > availableSeats
+    ) {
+      return NextResponse.json(
+        { error: "Not enough seats are available" },
+        { status: 400 }
+      );
+    }
+
+    // Store requests separately for each journey
+    const redisKey = `requests:${journeyId}`;
+
+    const storedRequests = await redisCommand([
+      "GET",
+      redisKey,
+    ]);
+
+    const requests = storedRequests
+      ? JSON.parse(storedRequests)
+      : [];
+
+    // Count seats in pending requests
+    const pendingSeats = requests
+      .filter((item) => item.status === "Pending")
+      .reduce(
+        (total, item) =>
+          total + Number(item.seatsRequested),
+        0
+      );
+
+    if (seatsRequested > availableSeats - pendingSeats) {
       return NextResponse.json(
         {
           error:
-            "Please enter all details and valid passenger seats (1-10)",
+            "These seats are already requested by other visitors. Please try fewer seats.",
         },
         { status: 400 }
       );
     }
 
-    // Validate vehicle
-    if (!["Bike", "Car"].includes(vehicle)) {
-      return NextResponse.json(
-        { error: "Select Bike or Car" },
-        { status: 400 }
-      );
-    }
-
-    // Validate text lengths
-    if (
-      name.length > 60 ||
-      destination.length > 120 ||
-      phone.length > 20
-    ) {
-      return NextResponse.json(
-        { error: "Input is too long" },
-        { status: 400 }
-      );
-    }
-
-    // Get existing active journeys
-    const journeys = await getActiveJourneys();
-
-    const now = Date.now();
-
-    // Create new journey
-    const newJourney = {
+    // Create new request
+    const newRequest = {
       id: randomUUID(),
+      journeyId,
       name,
-      destination,
       phone,
-      vehicle,
-      seatsAvailable,
-      createdAt: now,
-      expiresAt: now + 2 * 60 * 60 * 1000,
+      seatsRequested,
+      status: "Pending",
+      createdAt: Date.now(),
     };
 
-    journeys.unshift(newJourney);
+    requests.push(newRequest);
 
-    // Save to Upstash Redis
+    // Save request for 24 hours
     await redisCommand([
       "SET",
-      "journeys",
-      JSON.stringify(journeys),
+      redisKey,
+      JSON.stringify(requests),
       "EX",
       "86400",
     ]);
 
     return NextResponse.json(
       {
-        message: "Journey shared successfully!",
-        journey: newJourney,
+        message: "Seat request submitted successfully!",
+        request: {
+          id: newRequest.id,
+          status: newRequest.status,
+        },
       },
       { status: 201 }
     );
 
   } catch (error) {
-    console.error("POST journeys error:", error);
+    console.error("Seat request error:", error);
 
     return NextResponse.json(
-      { error: "Unable to save journey" },
+      { error: "Unable to submit seat request" },
       { status: 503 }
     );
   }
