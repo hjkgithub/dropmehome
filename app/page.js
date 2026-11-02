@@ -804,7 +804,7 @@ export default function Home() {
                 onClick={() => setSelectedJourney(null)}
               >
                 Close
-           /button>
+           </button>
             </div>
           </div>
         )}
