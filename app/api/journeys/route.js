@@ -25,6 +25,11 @@ async function redisCommand(command) {
   }
 
   const data = await response.json();
+
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
   return data.result;
 }
 
@@ -51,6 +56,8 @@ export async function GET() {
 
     return NextResponse.json(journeys);
   } catch (error) {
+    console.error("GET journeys error:", error);
+
     return NextResponse.json(
       { error: "Unable to load journeys" },
       { status: 503 }
@@ -66,14 +73,28 @@ export async function POST(request) {
     const destination = body.destination?.trim();
     const phone = body.phone?.trim();
     const vehicle = body.vehicle?.trim();
+    const seatsAvailable = Number(body.seatsAvailable);
 
-    if (!name || !destination || !phone || !vehicle) {
+    // Validate required fields
+    if (
+      !name ||
+      !destination ||
+      !phone ||
+      !vehicle ||
+      !Number.isInteger(seatsAvailable) ||
+      seatsAvailable < 1 ||
+      seatsAvailable > 10
+    ) {
       return NextResponse.json(
-        { error: "All fields are required" },
+        {
+          error:
+            "Please enter all details and valid passenger seats (1-10)",
+        },
         { status: 400 }
       );
     }
 
+    // Validate vehicle
     if (!["Bike", "Car"].includes(vehicle)) {
       return NextResponse.json(
         { error: "Select Bike or Car" },
@@ -81,6 +102,7 @@ export async function POST(request) {
       );
     }
 
+    // Validate text lengths
     if (
       name.length > 60 ||
       destination.length > 120 ||
@@ -92,22 +114,26 @@ export async function POST(request) {
       );
     }
 
+    // Get existing active journeys
     const journeys = await getActiveJourneys();
 
     const now = Date.now();
 
+    // Create new journey
     const newJourney = {
       id: randomUUID(),
       name,
       destination,
       phone,
       vehicle,
+      seatsAvailable,
       createdAt: now,
       expiresAt: now + 2 * 60 * 60 * 1000,
     };
 
     journeys.unshift(newJourney);
 
+    // Save to Upstash Redis
     await redisCommand([
       "SET",
       "journeys",
@@ -117,10 +143,16 @@ export async function POST(request) {
     ]);
 
     return NextResponse.json(
-      { message: "Journey shared successfully!" },
+      {
+        message: "Journey shared successfully!",
+        journey: newJourney,
+      },
       { status: 201 }
     );
+
   } catch (error) {
+    console.error("POST journeys error:", error);
+
     return NextResponse.json(
       { error: "Unable to save journey" },
       { status: 503 }
