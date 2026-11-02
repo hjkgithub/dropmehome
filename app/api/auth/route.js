@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server";
 import {
   randomBytes,
@@ -35,11 +34,14 @@ async function redisCommand(command) {
 
   const data = await response.json();
 
-  if (data.error) throw new Error(data.error);
+  if (data.error) {
+    throw new Error(data.error);
+  }
 
   return data.result;
 }
 
+// Generate a private Redis key for each email
 function emailKey(email) {
   const hash = createHash("sha256")
     .update(email)
@@ -48,18 +50,22 @@ function emailKey(email) {
   return `user:${hash}`;
 }
 
+// Secure password hashing
 async function hashPassword(password, salt) {
   const result = await scrypt(password, salt, 64);
   return result.toString("hex");
 }
 
+// Never expose password or salt
 function safeUser(user) {
   return {
     name: user.name,
     email: user.email,
+    role: user.role || "",
   };
 }
 
+// Create a 3-hour session
 async function createSession(user) {
   const token = randomBytes(32).toString("hex");
 
@@ -74,6 +80,7 @@ async function createSession(user) {
   return token;
 }
 
+// Set secure session cookie
 function setSessionCookie(response, token) {
   response.cookies.set("journey_session", token, {
     httpOnly: true,
@@ -84,9 +91,11 @@ function setSessionCookie(response, token) {
   });
 }
 
+// REGISTER AND LOGIN
 export async function POST(request) {
   try {
     const body = await request.json();
+
     const action = body.action;
 
     const email = String(body.email || "")
@@ -121,8 +130,10 @@ export async function POST(request) {
 
     const key = emailKey(email);
 
+    // CREATE ACCOUNT
     if (action === "register") {
       const name = String(body.name || "").trim();
+      const role = body.role;
 
       if (!name || name.length > 60) {
         return NextResponse.json(
@@ -131,17 +142,30 @@ export async function POST(request) {
         );
       }
 
+      if (!["passenger", "driver"].includes(role)) {
+        return NextResponse.json(
+          { error: "Please select your account type" },
+          { status: 400 }
+        );
+      }
+
       const salt = randomBytes(16).toString("hex");
-      const passwordHash = await hashPassword(password, salt);
+
+      const passwordHash = await hashPassword(
+        password,
+        salt
+      );
 
       const user = {
         name,
         email,
+        role,
         salt,
         passwordHash,
         createdAt: Date.now(),
       };
 
+      // NX prevents duplicate email registration
       const result = await redisCommand([
         "SET",
         key,
@@ -164,11 +188,16 @@ export async function POST(request) {
       });
 
       setSessionCookie(response, token);
+
       return response;
     }
 
+    // LOGIN
     if (action === "login") {
-      const stored = await redisCommand(["GET", key]);
+      const stored = await redisCommand([
+        "GET",
+        key,
+      ]);
 
       if (!stored) {
         return NextResponse.json(
@@ -178,13 +207,21 @@ export async function POST(request) {
       }
 
       const user = JSON.parse(stored);
+
       const passwordHash = await hashPassword(
         password,
         user.salt
       );
 
-      const submitted = Buffer.from(passwordHash, "hex");
-      const saved = Buffer.from(user.passwordHash, "hex");
+      const submitted = Buffer.from(
+        passwordHash,
+        "hex"
+      );
+
+      const saved = Buffer.from(
+        user.passwordHash,
+        "hex"
+      );
 
       if (
         submitted.length !== saved.length ||
@@ -204,6 +241,7 @@ export async function POST(request) {
       });
 
       setSessionCookie(response, token);
+
       return response;
     }
 
@@ -222,15 +260,15 @@ export async function POST(request) {
   }
 }
 
+// CHECK LOGIN SESSION
 export async function GET(request) {
   try {
-    const token = request.cookies.get("journey_session")?.value;
+    const token = request.cookies.get(
+      "journey_session"
+    )?.value;
 
     if (!token) {
-      return NextResponse.json(
-        { user: null },
-        { status: 200 }
-      );
+      return NextResponse.json({ user: null });
     }
 
     const stored = await redisCommand([
@@ -239,8 +277,12 @@ export async function GET(request) {
     ]);
 
     if (!stored) {
-      const response = NextResponse.json({ user: null });
+      const response = NextResponse.json({
+        user: null,
+      });
+
       response.cookies.delete("journey_session");
+
       return response;
     }
 
@@ -258,12 +300,18 @@ export async function GET(request) {
   }
 }
 
+// LOGOUT
 export async function DELETE(request) {
   try {
-    const token = request.cookies.get("journey_session")?.value;
+    const token = request.cookies.get(
+      "journey_session"
+    )?.value;
 
     if (token) {
-      await redisCommand(["DEL", `session:${token}`]);
+      await redisCommand([
+        "DEL",
+        `session:${token}`,
+      ]);
     }
 
     const response = NextResponse.json({
@@ -282,5 +330,4 @@ export async function DELETE(request) {
       { status: 503 }
     );
   }
-      }
-
+    }
