@@ -15,6 +15,16 @@ export default function Home() {
   const [journeys, setJourneys] = useState([]);
   const [message, setMessage] = useState("");
 
+  // Seat request states
+  const [selectedJourney, setSelectedJourney] = useState(null);
+  const [requestForm, setRequestForm] = useState({
+    name: "",
+    phone: "",
+    seatsRequested: "1",
+  });
+  const [requestMessage, setRequestMessage] = useState("");
+  const [requesting, setRequesting] = useState(false);
+
   async function loadJourneys() {
     try {
       const res = await fetch("/api/journeys", {
@@ -31,7 +41,9 @@ export default function Home() {
 
   useEffect(() => {
     loadJourneys();
+
     const timer = setInterval(loadJourneys, 10000);
+
     return () => clearInterval(timer);
   }, []);
 
@@ -48,14 +60,7 @@ export default function Home() {
         body: JSON.stringify(form),
       });
 
-      const text = await res.text();
-
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = { error: text.slice(0, 300) };
-      }
+      const data = await res.json();
 
       if (!res.ok) {
         setMessage(
@@ -76,9 +81,63 @@ export default function Home() {
       });
 
       loadJourneys();
-
     } catch (error) {
       setMessage("Network error: " + error.message);
+    }
+  }
+
+  function openRequestForm(journey) {
+    setSelectedJourney(journey);
+
+    setRequestForm({
+      name: "",
+      phone: "",
+      seatsRequested: "1",
+    });
+
+    setRequestMessage("");
+  }
+
+  async function handleRequestSubmit(e) {
+    e.preventDefault();
+
+    if (!selectedJourney) return;
+
+    setRequesting(true);
+    setRequestMessage("Submitting request...");
+
+    try {
+      const res = await fetch("/api/requests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          journeyId: selectedJourney.id,
+          ...requestForm,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setRequestMessage(
+          data.error || "Unable to submit request"
+        );
+        return;
+      }
+
+      setRequestMessage("Seat request submitted successfully!");
+
+      setTimeout(() => {
+        setSelectedJourney(null);
+        loadJourneys();
+      }, 1200);
+
+    } catch (error) {
+      setRequestMessage("Network error: " + error.message);
+    } finally {
+      setRequesting(false);
     }
   }
 
@@ -126,7 +185,10 @@ export default function Home() {
           <option value="Car">Car</option>
         </select>
 
-        <label>Available passenger seats (excluding you)</label>
+        <label>
+          Available passenger seats (excluding you)
+        </label>
+
         <input
           type="number"
           min="1"
@@ -154,15 +216,139 @@ export default function Home() {
       {journeys.map((item) => (
         <article key={item.id}>
           <h3>{item.name}</h3>
+
           <p>Heading to: {item.destination}</p>
           <p>Phone: {item.phone}</p>
           <p>Vehicle: {item.vehicle}</p>
           <p>Available seats: {item.seatsAvailable}</p>
+
           <small>
             Expires: {new Date(item.expiresAt).toLocaleString()}
           </small>
+
+          <button
+            type="button"
+            disabled={Number(item.seatsAvailable) <= 0}
+            onClick={() => openRequestForm(item)}
+            style={{
+              width: "100%",
+              marginTop: "15px",
+              opacity:
+                Number(item.seatsAvailable) <= 0 ? 0.5 : 1,
+            }}
+          >
+            {Number(item.seatsAvailable) <= 0
+              ? "No Seats Available"
+              : "Request Seats"}
+          </button>
         </article>
       ))}
+
+      {selectedJourney && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "18px",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              width: "100%",
+              maxWidth: "420px",
+              padding: "22px",
+              borderRadius: "15px",
+            }}
+          >
+            <h2 style={{ marginTop: 0 }}>
+              Request Seats
+            </h2>
+
+            <p>
+              Journey by <strong>{selectedJourney.name}</strong>
+            </p>
+
+            <p>
+              Destination: {selectedJourney.destination}
+            </p>
+
+            <p>
+              Available seats: {selectedJourney.seatsAvailable}
+            </p>
+
+            <form onSubmit={handleRequestSubmit}>
+              <input
+                placeholder="Your name"
+                value={requestForm.name}
+                onChange={(e) =>
+                  setRequestForm({
+                    ...requestForm,
+                    name: e.target.value,
+                  })
+                }
+                required
+              />
+
+              <input
+                type="tel"
+                placeholder="Your phone number"
+                value={requestForm.phone}
+                onChange={(e) =>
+                  setRequestForm({
+                    ...requestForm,
+                    phone: e.target.value,
+                  })
+                }
+                required
+              />
+
+              <label>Number of seats required</label>
+
+              <input
+                type="number"
+                min="1"
+                max={selectedJourney.seatsAvailable}
+                value={requestForm.seatsRequested}
+                onChange={(e) =>
+                  setRequestForm({
+                    ...requestForm,
+                    seatsRequested: e.target.value,
+                  })
+                }
+                required
+              />
+
+              <button
+                type="submit"
+                disabled={requesting}
+              >
+                {requesting ? "Sending..." : "Submit Request"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedJourney(null)}
+                style={{
+                  background: "#64748b",
+                  marginTop: "8px",
+                  width: "100%",
+                }}
+              >
+                Cancel
+              </button>
+            </form>
+
+            <p>{requestMessage}</p>
+          </div>
+        </div>
+      )}
     </main>
   );
-        }
+            }
+              
