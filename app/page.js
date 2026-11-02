@@ -804,4 +804,11 @@ export default function Home() {
                 onClick={() => setSelectedJourney(null)}
               >
                 Close
-           
+           /button>
+            </div>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
