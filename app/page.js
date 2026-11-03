@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -95,6 +96,11 @@ export default function Home() {
   const [requestMessage, setRequestMessage] = useState("");
   const [requestLoading, setRequestLoading] = useState(false);
 
+  // Driver dashboard states
+  const [driverRequests, setDriverRequests] = useState([]);
+  const [driverRequestMessage, setDriverRequestMessage] = useState("");
+  const [actionLoading, setActionLoading] = useState("");
+
   // Check existing session
   useEffect(() => {
     async function checkSession() {
@@ -136,12 +142,49 @@ export default function Home() {
     }
   }
 
+  // Load driver's incoming requests
+  async function loadDriverRequests() {
+    try {
+      const res = await fetch("/api/requests", {
+        cache: "no-store",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setDriverRequestMessage(
+          data.error || "Unable to load passenger requests."
+        );
+        return;
+      }
+
+      if (Array.isArray(data)) {
+        setDriverRequests(data);
+        setDriverRequestMessage("");
+      }
+    } catch (error) {
+      console.error("Request loading error:", error);
+      setDriverRequestMessage("Unable to connect to the server.");
+    }
+  }
+
+  // Refresh dashboard data every 10 seconds
   useEffect(() => {
     if (!user) return;
 
     loadJourneys();
 
-    const timer = setInterval(loadJourneys, 10000);
+    if (user.role === "driver") {
+      loadDriverRequests();
+    }
+
+    const timer = setInterval(() => {
+      loadJourneys();
+
+      if (user.role === "driver") {
+        loadDriverRequests();
+      }
+    }, 10000);
 
     return () => clearInterval(timer);
   }, [user]);
@@ -182,6 +225,7 @@ export default function Home() {
       setUser(data.user);
       setScreen("dashboard");
       setAuthMessage("");
+
       setAuthForm({
         name: "",
         email: "",
@@ -206,6 +250,8 @@ export default function Home() {
       setScreen("home");
       setJourneys([]);
       setSelectedJourney(null);
+      setDriverRequests([]);
+      setDriverRequestMessage("");
 
     } catch (error) {
       alert("Unable to log out. Please try again.");
@@ -250,9 +296,59 @@ export default function Home() {
       });
 
       loadJourneys();
+      loadDriverRequests();
 
     } catch (error) {
       setJourneyMessage("Network error. Please try again.");
+    }
+  }
+
+  // Accept or reject passenger request
+  async function handleRequestAction(request, action) {
+    const actionKey = `${request.journeyId}-${request.id}`;
+
+    setActionLoading(actionKey);
+    setDriverRequestMessage(
+      action === "accept"
+        ? "Accepting passenger request..."
+        : "Rejecting passenger request..."
+    );
+
+    try {
+      const res = await fetch("/api/requests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action,
+          journeyId: request.journeyId,
+          requestId: request.id,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setDriverRequestMessage(
+          data.error || "Unable to update request."
+        );
+        return;
+      }
+
+      setDriverRequestMessage(
+        action === "accept"
+          ? "Passenger request accepted!"
+          : "Passenger request rejected!"
+      );
+
+      await loadDriverRequests();
+      await loadJourneys();
+
+    } catch (error) {
+      setDriverRequestMessage("Network error. Please try again.");
+    } finally {
+      setActionLoading("");
     }
   }
 
@@ -653,6 +749,200 @@ export default function Home() {
           </div>
         )}
 
+        {/* DRIVER REQUEST DASHBOARD */}
+        {user.role === "driver" && (
+          <section>
+            <h2 style={{ marginTop: "30px" }}>
+              Passenger Requests ({driverRequests.length})
+            </h2>
+
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: "8px",
+              marginTop: "15px",
+            }}>
+              {[
+                {
+                  label: "Pending",
+                  color: "#b45309",
+                  count: driverRequests.filter(
+                    (r) => r.status === "Pending"
+                  ).length,
+                },
+                {
+                  label: "Accepted",
+                  color: "#15803d",
+                  count: driverRequests.filter(
+                    (r) => r.status === "Accepted"
+                  ).length,
+                },
+                {
+                  label: "Rejected",
+                  color: "#b91c1c",
+                  count: driverRequests.filter(
+                    (r) => r.status === "Rejected"
+                  ).length,
+                },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  style={{
+                    background: "white",
+                    padding: "14px 5px",
+                    borderRadius: "12px",
+                    textAlign: "center",
+                    boxShadow: "0 4px 18px #0000000b",
+                  }}
+                >
+                  <div style={{
+                    fontSize: "24px",
+                    fontWeight: "bold",
+                    color: item.color,
+                  }}>
+                    {item.count}
+                  </div>
+
+                  <small style={{ color: "#64748b" }}>
+                    {item.label}
+                  </small>
+                </div>
+              ))}
+            </div>
+
+            <p style={{
+                color: "#64748b",
+              fontSize: "13px",
+              marginTop: "12px",
+            }}>
+              Requests refresh automatically every 10 seconds.
+            </p>
+
+            <button
+              style={styles.secondary}
+              onClick={loadDriverRequests}
+              disabled={Boolean(actionLoading)}
+            >
+              Refresh Requests
+            </button>
+{driverRequestMessage && (
+              <p style={{ color: "#2563eb" }}>
+                {driverRequestMessage}
+              </p>
+            )}
+
+            {driverRequests.length === 0 && (
+              <div style={styles.card}>
+                <p>No passenger requests yet.</p>
+                <small style={{ color: "#64748b" }}>
+                  When someone requests a seat on your journey,
+                  their details will appear here.
+                </small>
+              </div>
+            )}
+
+{driverRequests.map((request) => {
+              const actionKey =
+                `${request.journeyId}-${request.id}`;
+
+              const busy = actionLoading === actionKey;
+
+              return (
+                <article
+                  key={request.id}
+                  style={{
+                    ...styles.card,
+                    borderLeft: "5px solid #2563eb",
+                  }}
+                >
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}>
+
+  <h3 style={{ margin: 0 }}>
+                      {request.name}
+                    </h3>
+
+                    <span style={{
+                      padding: "6px 10px",
+                      borderRadius: "20px",
+                      fontSize: "12px",
+                      fontWeight: "bold",
+                      background:
+                        request.status === "Accepted"
+                          ? "#dcfce7"
+                          : request.status === "Rejected"
+                          ? "#fee2e2"
+                          : "#fef3c7",
+                      color:
+                        request.status === "Accepted"
+                          ? "#15803d"
+                          : request.status === "Rejected"
+                          ? "#b91c1c"
+                          : "#92400e",
+                    }}>
+                      {request.status}
+                    </span>
+                  </div>
+
+     <p>
+                    <strong>Phone:</strong>{" "}
+                    {request.phone}
+                  </p>
+
+                  <p>
+                    <strong>Destination:</strong>{" "}
+                    {request.journey?.destination || "Unavailable"}
+                  </p>
+
+                  <p>
+                    <strong>Vehicle:</strong>{" "}
+                    {request.journey?.vehicle || "Unavailable"}
+                  </p>
+
+                  <p>
+                    <strong>Seats requested:</strong>{" "}
+                    {request.seatsRequested}
+                  </p>
+
+{request.createdAt && (
+                    <small style={{ color: "#64748b" }}>
+                      Requested:{" "}
+                      {new Date(request.createdAt).toLocaleString()}
+                    </small>
+                  )}
+
+                  {request.status === "Pending" && (
+                    <div style={{
+                      display: "flex",
+                      gap: "10px",
+                      marginTop: "12px",
+                    }}>
+                      <button
+                        style={{
+                          ...styles.button,
+                          background: "#16a34a",
+                          marginTop: 0,
+                        }}
+                        disabled={Boolean(actionLoading)}
+                        onClick={() =>
+                          handleRequestAction(request, "accept")
+                        }
+                      >
+
+{busy ? "Please wait..." : "Reject"}
+                      </button>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </section>
+        )}
+
         {/* ACTIVE JOURNEYS */}
         <h2 style={{ marginTop: "30px" }}>
           {user.role === "driver"
@@ -688,6 +978,8 @@ export default function Home() {
             </p>
 
             <p>
+
+                  <p>
               <strong>Available seats:</strong>{" "}
               {item.seatsAvailable}
             </p>
@@ -712,7 +1004,8 @@ export default function Home() {
         ))}
 
         {/* REQUEST POPUP */}
-        {selectedJourney && (
+
+{selectedJourney && (
           <div style={{
             position: "fixed",
             inset: 0,
@@ -758,7 +1051,8 @@ export default function Home() {
                   required
                 />
 
-                <input
+
+                         <input
                   style={styles.input}
                   type="tel"
                   placeholder="Your phone number"
@@ -804,7 +1098,7 @@ export default function Home() {
                 onClick={() => setSelectedJourney(null)}
               >
                 Close
-           </button>
+              </button>
             </div>
           </div>
         )}
@@ -812,3 +1106,9 @@ export default function Home() {
     </main>
   );
 }
+
+
+
+
+
+  
