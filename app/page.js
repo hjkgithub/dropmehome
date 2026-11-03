@@ -944,6 +944,9 @@ export default function Home() {
         )}
 
         {/* ACTIVE JOURNEYS */}
+
+
+        {/* ACTIVE JOURNEYS */}
         <h2 style={{ marginTop: "30px" }}>
           {user.role === "driver"
             ? "Community Journeys"
@@ -978,8 +981,6 @@ export default function Home() {
             </p>
 
             <p>
-
-                  <p>
               <strong>Available seats:</strong>{" "}
               {item.seatsAvailable}
             </p>
@@ -1002,6 +1003,11 @@ export default function Home() {
             )}
           </article>
         ))}
+
+        
+          
+
+            
 
         {/* REQUEST POPUP */}
 
