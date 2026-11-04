@@ -193,7 +193,10 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(journeyForm),
+        body: JSON.stringify({
+  ...journeyForm,
+  name: user.name,
+}),
       });
 
       const data = await response.json();
