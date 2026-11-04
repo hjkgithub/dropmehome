@@ -96,6 +96,31 @@ export default function DriverDashboard({
 
       {message && <p>{message}</p>}
 
+       <h3>Active Journeys ({journeys.length})</h3>
+
+{journeys.length === 0 && (
+  <p>No active journeys available.</p>
+)}
+
+{journeys.map((journey) => (
+  <article
+    key={journey.id}
+    style={{
+      border: "1px solid #ddd",
+      borderRadius: "10px",
+      padding: "15px",
+      marginBottom: "15px",
+    }}
+  >
+    <h4>{journey.name}</h4>
+    <p>Destination: {journey.destination}</p>
+    <p>Vehicle: {journey.vehicle}</p>
+    <p>Available seats: {journey.seatsAvailable}</p>
+  </article>
+))}
+
+       
+
       {/* PASSENGER REQUESTS */}
 
       <h3>Passenger Requests</h3>
