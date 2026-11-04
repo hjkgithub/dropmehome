@@ -351,6 +351,7 @@ export default function Home() {
 
       {user && user.role === "driver" && (
         <DriverDashboard
+          journeys={journeys}
           journeyForm={journeyForm}
           setJourneyForm={setJourneyForm}
           onPublish={handleJourneySubmit}
