@@ -119,7 +119,25 @@ export async function POST(request) {
       );
     }
 
+    
     const journeys = await getActiveJourneys();
+
+// Maximum 5 active journeys per driver
+const myJourneys = journeys.filter(
+  (journey) => journey.ownerEmail === user.email
+);
+
+if (myJourneys.length >= 5) {
+  return NextResponse.json(
+    {
+      error: "You can publish a maximum of 5 active journeys. Delete one to publish another.",
+    },
+    { status: 400 }
+  );
+}
+
+
+    
     const now = Date.now();
 
     const newJourney = {
