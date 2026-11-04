@@ -87,7 +87,9 @@ export async function GET(request) {
 
     results.sort((a, b) => b.createdAt - a.createdAt);
 
-    return NextResponse.json(results);
+    return NextResponse.json({
+      requests: results,
+    });
   } catch (error) {
     console.error("GET requests error:", error);
 
