@@ -179,6 +179,7 @@ if (myJourneys.length >= 5) {
       { status: 503 }
     );
   }
+} 
       export async function DELETE(request) {
   try {
     const user = await getSession(request);
