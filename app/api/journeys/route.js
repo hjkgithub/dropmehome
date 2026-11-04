@@ -60,7 +60,9 @@ export async function GET() {
       ({ ownerEmail, ...journey }) => journey
     );
 
-    return NextResponse.json(publicJourneys);
+    return NextResponse.json({
+      journeys:publicJourneys
+    });
   } catch (error) {
     console.error("GET journeys error:", error);
 
