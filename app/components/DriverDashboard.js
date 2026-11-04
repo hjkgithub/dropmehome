@@ -4,6 +4,7 @@
 import RequestCard from "./RequestCard";
 
 export default function DriverDashboard({
+  journeys,
   journeyForm,
   setJourneyForm,
   onPublish,
