@@ -179,4 +179,66 @@ if (myJourneys.length >= 5) {
       { status: 503 }
     );
   }
+      export async function DELETE(request) {
+  try {
+    const user = await getSession(request);
+
+    if (!user || user.role !== "driver") {
+      return NextResponse.json(
+        { error: "Driver login required" },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const journeyId = String(body.journeyId || "");
+
+    if (!journeyId) {
+      return NextResponse.json(
+        { error: "Journey ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const journeys = await getActiveJourneys();
+
+    const journey = journeys.find(
+      (item) =>
+        item.id === journeyId &&
+        item.ownerEmail === user.email
+    );
+
+    if (!journey) {
+      return NextResponse.json(
+        { error: "Journey not found or access denied" },
+        { status: 404 }
+      );
+    }
+
+    const updatedJourneys = journeys.filter(
+      (item) => item.id !== journeyId
+    );
+
+    await redisCommand([
+      "SET",
+      "journeys",
+      JSON.stringify(updatedJourneys),
+      "EX",
+      "86400",
+    ]);
+
+    // Remove requests belonging to this journey.
+    await redisCommand(["DEL", `requests:${journeyId}`]);
+
+    return NextResponse.json({
+      message: "Journey deleted successfully",
+    });
+  } catch (error) {
+    console.error("DELETE journey error:", error);
+
+    return NextResponse.json(
+      { error: "Unable to delete journey" },
+      { status: 503 }
+    );
+  }
       }
