@@ -105,7 +105,20 @@ export default function DriverDashboard({
 
 {journeys.map((journey) => (
   <article
-   <p>Available seats: {journey.seatsAvailable}</p>
+    key={journey.id}
+    style={{
+      border: "1px solid #ddd",
+      borderRadius: "10px",
+      padding: "15px",
+      marginBottom: "15px",
+    }}
+  >
+    <h4>{journey.name}</h4>
+
+    <p>Destination: {journey.destination}</p>
+    <p>Vehicle: {journey.vehicle}</p>
+    <p>Available seats: {journey.seatsAvailable}</p>
+    
  <button
   onClick={() => {
     if (window.confirm("Are you sure you want to delete this journey?")) {
