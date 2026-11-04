@@ -5,6 +5,7 @@ import RequestCard from "./RequestCard";
 
 export default function DriverDashboard({
   journeys,
+  onDelete,
   journeyForm,
   setJourneyForm,
   onPublish,
@@ -104,6 +105,24 @@ export default function DriverDashboard({
 
 {journeys.map((journey) => (
   <article
+   <p>Available seats: {journey.seatsAvailable}</p>
+ <button
+  onClick={() => {
+    if (window.confirm("Are you sure you want to delete this journey?")) {
+      onDelete(journey.id);
+    }
+  }}
+  style={{
+    background: "red",
+    color: "white",
+    padding: "10px",
+    border: "none",
+    borderRadius: "6px",
+    marginTop: "10px",
+  }}
+>
+  Delete Journey
+</button>
     key={journey.id}
     style={{
       border: "1px solid #ddd",
