@@ -224,6 +224,29 @@ export default function Home() {
     }
   }
 
+  async function handleDeleteJourney(journeyId) {
+  const response = await fetch("/api/journeys", {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ journeyId }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    alert(data.error || "Unable to delete journey");
+    return;
+  }
+
+  alert("Journey deleted successfully!");
+
+  await loadJourneys();
+  await loadDriverRequests();
+  }
+  
+
   function openRequest(journey) {
     setSelectedJourney(journey);
 
@@ -352,6 +375,7 @@ export default function Home() {
       {user && user.role === "driver" && (
         <DriverDashboard
           journeys={journeys}
+          onDelete={handleDeleteJourney}
           journeyForm={journeyForm}
           setJourneyForm={setJourneyForm}
           onPublish={handleJourneySubmit}
