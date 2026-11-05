@@ -162,6 +162,32 @@ export async function GET(request) {
       );
     }
 
+    // Check whether this passenger requested a seat
+    const requestsStored = await redisCommand([
+      "GET",
+      `requests:${journeyId}`,
+    ]);
+
+    const requests = requestsStored
+      ? JSON.parse(requestsStored)
+      : [];
+
+    const hasRequested = requests.some((item) => {
+      const status = String(item.status || "").toLowerCase();
+
+      return (
+        item.email === user.email &&
+        (status === "pending" || status === "accepted")
+      );
+    });
+
+    if (!hasRequested) {
+      return NextResponse.json(
+        { error: "You must request a seat to view this location." },
+        { status: 403 }
+      );
+    }
+
     const stored = await redisCommand([
       "GET",
       `live_location:${journeyId}`,
@@ -178,5 +204,4 @@ export async function GET(request) {
       { status: 503 }
     );
   }
-  }
-
+}
