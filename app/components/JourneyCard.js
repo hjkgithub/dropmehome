@@ -17,6 +17,10 @@ export default function JourneyCard({ journey, onRequest }) {
         {journey.name}
       </h3>
 
+<p>DEBUG: {JSON.stringify(journey.fromLocation)}</p>
+
+
+
       {/* Journey Route */}
       <div
         style={{
