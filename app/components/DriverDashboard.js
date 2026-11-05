@@ -1,8 +1,8 @@
-
 "use client";
 
 import RequestCard from "./RequestCard";
 import JourneyForm from "./JourneyForm";
+import DriverLiveLocation from "./DriverLiveLocation";
 
 export default function DriverDashboard({
   journeys,
@@ -39,65 +39,66 @@ export default function DriverDashboard({
     <section>
       <h2>Driver Dashboard</h2>
 
-      {/* PUBLISH JOURNEY */}
-
       <h3>Publish a Journey</h3>
 
-<JourneyForm
-  journeyForm={journeyForm}
-  setJourneyForm={setJourneyForm}
-  onPublish={onPublish}
-  loading={loading}
-/>
+      <JourneyForm
+        journeyForm={journeyForm}
+        setJourneyForm={setJourneyForm}
+        onPublish={onPublish}
+        loading={loading}
+      />
 
       {message && <p>{message}</p>}
 
-       <h3>Active Journeys ({journeys.length})</h3>
+      <h3>Active Journeys ({journeys.length})</h3>
 
-{journeys.length === 0 && (
-  <p>No active journeys available.</p>
-)}
+      {journeys.length === 0 && (
+        <p>No active journeys available.</p>
+      )}
 
-{journeys.map((journey) => (
-  <article
-    key={journey.id}
-    style={{
-      border: "1px solid #ddd",
-      borderRadius: "10px",
-      padding: "15px",
-      marginBottom: "15px",
-    }}
-  >
-    <h4>{journey.name}</h4>
+      {journeys.map((journey) => (
+        <article
+          key={journey.id}
+          style={{
+            border: "1px solid #ddd",
+            borderRadius: "10px",
+            padding: "15px",
+            marginBottom: "15px",
+          }}
+        >
+          <h4>{journey.name}</h4>
 
-    <p>Starting from: {journey.fromLocation}</p>
-    <p>Destination: {journey.destination}</p>
-    <p>Vehicle: {journey.vehicle}</p>
-    <p>Available seats: {journey.seatsAvailable}</p>
-    
-    
- <button
-    onClick={() => {
-        if (window.confirm("Are you sure you want to delete this journey?")) {
-          onDelete(journey.id);
-        }
-      }}
-      style={{
-        background: "red",
-        color: "white",
-        padding: "10px",
-        border: "none",
-        borderRadius: "6px",
-        marginTop: "10px",
-      }}
-    >
-      Delete Journey
-    </button>
-  </article>
-))}
+          <p>Starting from: {journey.fromLocation}</p>
+          <p>Destination: {journey.destination}</p>
+          <p>Vehicle: {journey.vehicle}</p>
+          <p>Available seats: {journey.seatsAvailable}</p>
 
+          {/* DRIVER LIVE GPS SHARING */}
+          <DriverLiveLocation journeyId={journey.id} />
 
-      {/* PASSENGER REQUESTS */}
+          <button
+            onClick={() => {
+              if (
+                window.confirm(
+                  "Are you sure you want to delete this journey?"
+                )
+              ) {
+                onDelete(journey.id);
+              }
+            }}
+            style={{
+              background: "red",
+              color: "white",
+              padding: "10px",
+              border: "none",
+              borderRadius: "6px",
+              marginTop: "10px",
+            }}
+          >
+            Delete Journey
+          </button>
+        </article>
+      ))}
 
       <h3>Passenger Requests</h3>
 
@@ -119,5 +120,4 @@ export default function DriverDashboard({
       ))}
     </section>
   );
-            }
-
+}
