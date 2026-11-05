@@ -28,6 +28,7 @@ export default function Home() {
   const [journeys, setJourneys] = useState([]);
 
   const [journeyForm, setJourneyForm] = useState({
+    fromLocation: "",
     destination: "",
     phone: "",
     vehicle: "Bike",
