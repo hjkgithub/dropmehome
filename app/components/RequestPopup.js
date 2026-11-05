@@ -1,6 +1,9 @@
 
 "use client";
 
+import { useState } from "react";
+import PassengerLocation from "./PassengerLocation";
+
 export default function RequestPopup({
   journey,
   requestForm,
@@ -10,6 +13,8 @@ export default function RequestPopup({
   loading,
   message,
 }) {
+  const [passengerLocation, setPassengerLocation] = useState(null);
+
   if (!journey) return null;
 
   function updateField(field, value) {
@@ -17,6 +22,10 @@ export default function RequestPopup({
       ...prev,
       [field]: value,
     }));
+  }
+
+  function submitRequest() {
+    onSubmit(passengerLocation);
   }
 
   return (
@@ -52,9 +61,7 @@ export default function RequestPopup({
           type="text"
           placeholder="Your name"
           value={requestForm.name}
-          onChange={(e) =>
-            updateField("name", e.target.value)
-          }
+          onChange={(e) => updateField("name", e.target.value)}
           required
         />
 
@@ -62,9 +69,7 @@ export default function RequestPopup({
           type="tel"
           placeholder="Phone number"
           value={requestForm.phone}
-          onChange={(e) =>
-            updateField("phone", e.target.value)
-          }
+          onChange={(e) => updateField("phone", e.target.value)}
           required
         />
 
@@ -73,29 +78,29 @@ export default function RequestPopup({
           min="1"
           max={journey.seatsAvailable}
           value={requestForm.seatsRequested}
-          onChange={(e) =>
-            updateField("seatsRequested", e.target.value)
-          }
+          onChange={(e) => updateField("seatsRequested", e.target.value)}
           required
         />
 
+        <h3>Pickup Location</h3>
+        <p>Share your current location with the driver (optional).</p>
+
+        <PassengerLocation onLocation={setPassengerLocation} />
+
+        {passengerLocation && (
+          <p>GPS location attached to your request.</p>
+        )}
+
         {message && <p>{message}</p>}
 
-        <button
-          onClick={onSubmit}
-          disabled={loading}
-        >
+        <button onClick={submitRequest} disabled={loading}>
           {loading ? "Submitting..." : "Submit Request"}
         </button>
 
-        <button
-          onClick={onClose}
-          type="button"
-        >
+        <button onClick={onClose} type="button">
           Cancel
         </button>
       </div>
     </div>
   );
 }
-
