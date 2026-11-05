@@ -418,6 +418,32 @@ await loadJourneys();
         loading={requestLoading}
         message={requestMessage}
       />
+
+          
+{mySharedLocation && (
+  <div style={{
+    margin: "15px 0",
+    padding: "15px",
+    border: "1px solid #ddd",
+    borderRadius: "10px"
+  }}>
+    <h3>Your Shared GPS Location</h3>
+
+    <p>Your location was attached to your seat request.</p>
+
+    <a
+      href={`https://www.google.com/maps?q=${mySharedLocation.latitude},${mySharedLocation.longitude}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{ color: "blue", fontWeight: "bold" }}
+    >
+      View My Location on Google Maps
+    </a>
+  </div>
+)}
+
+
+          
     </main>
   );
       }
