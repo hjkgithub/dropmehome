@@ -85,13 +85,15 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-
+    
+    const fromLocation = body.fromLocation?.trim();
     const destination = body.destination?.trim();
     const phone = body.phone?.trim();
     const vehicle = body.vehicle?.trim();
     const seatsAvailable = Number(body.seatsAvailable);
 
     if (
+      !fromLocation ||
       !destination ||
       !phone ||
       !vehicle ||
