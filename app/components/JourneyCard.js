@@ -1,8 +1,13 @@
+
 "use client";
 
 import PassengerLiveLocation from "./PassengerLiveLocation";
 
-export default function JourneyCard({ journey, onRequest }) {
+export default function JourneyCard({
+  journey,
+  onRequest,
+  canViewLiveLocation = false,
+}) {
   return (
     <article
       style={{
@@ -18,7 +23,6 @@ export default function JourneyCard({ journey, onRequest }) {
         {journey.name}
       </h3>
 
-      {/* Journey Route */}
       <div
         style={{
           background: "#f3f7ff",
@@ -77,7 +81,9 @@ export default function JourneyCard({ journey, onRequest }) {
         {new Date(journey.expiresAt).toLocaleString()}
       </p>
 
-      <PassengerLiveLocation journeyId={journey.id} />
+      {canViewLiveLocation && (
+        <PassengerLiveLocation journeyId={journey.id} />
+      )}
 
       <button
         onClick={() => onRequest(journey)}
