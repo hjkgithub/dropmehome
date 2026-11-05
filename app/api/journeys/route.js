@@ -141,17 +141,19 @@ if (myJourneys.length >= 5) {
     const now = Date.now();
 
     const newJourney = {
-      id: randomUUID(),
-      name: user.name,
-      ownerEmail: user.email,
-      destination,
-      phone,
-      vehicle,
-      seatsAvailable,
-      createdAt: now,
-      expiresAt: now + 2 * 60 * 60 * 1000,
-    };
+  id: randomUUID(),
+  name: user.name,
+  ownerEmail: user.email,
+  fromLocation: String(body.fromLocation || "").trim(),
+  destination,
+  phone,
+  vehicle,
+  seatsAvailable,
+  createdAt: now,
+  expiresAt: now + 2 * 60 * 60 * 1000,
+};
 
+    
     journeys.unshift(newJourney);
 
     await redisCommand([
