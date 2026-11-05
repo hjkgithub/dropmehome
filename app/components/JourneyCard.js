@@ -42,9 +42,12 @@ export default function JourneyCard({ journey, onRequest }) {
             color: "#174ea6",
           }}
         >
-          {journey.fromLocation || "Starting location not specified"}
-          {" → "}
-          {journey.destination}
+           Driver is now in{" "}
+  {journey.fromLocation || "Unknown location"}
+  {" and going to "}
+  {journey.destination}
+
+          
         </h3>
       </div>
 
