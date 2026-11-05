@@ -1,5 +1,6 @@
-
 "use client";
+
+import PassengerLiveLocation from "./PassengerLiveLocation";
 
 export default function JourneyCard({ journey, onRequest }) {
   return (
@@ -16,10 +17,6 @@ export default function JourneyCard({ journey, onRequest }) {
       <h3 style={{ marginTop: 0 }}>
         {journey.name}
       </h3>
-
-
-
-
 
       {/* Journey Route */}
       <div
@@ -42,50 +39,45 @@ export default function JourneyCard({ journey, onRequest }) {
             color: "#174ea6",
           }}
         >
-           Rider is now in{" "}
-  {journey.fromLocation || "Unknown location"}
-  {" and going to "}
-  {journey.destination}
-
-          
+          Rider is now in{" "}
+          {journey.fromLocation || "Unknown location"}
+          {" and going to "}
+          {journey.destination}
         </h3>
 
-          <p
-  style={{
-    fontSize: "12px",
-    color: "#777",
-    marginTop: "6px",
-  }}
->
-  Posted at:{" "}
-  {new Date(journey.createdAt).toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  })}
-</p>
-
-
-          
+        <p
+          style={{
+            fontSize: "12px",
+            color: "#777",
+            marginTop: "6px",
+          }}
+        >
+          Posted at:{" "}
+          {new Date(journey.createdAt).toLocaleString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          })}
+        </p>
       </div>
 
       <p>
-        <strong>Vehicle:</strong>{" "}
-        {journey.vehicle}
+        <strong>Vehicle:</strong> {journey.vehicle}
       </p>
 
       <p>
-        <strong>Available seats:</strong>{" "}
-        {journey.seatsAvailable}
+        <strong>Available seats:</strong> {journey.seatsAvailable}
       </p>
 
       <p>
         <strong>Expires:</strong>{" "}
         {new Date(journey.expiresAt).toLocaleString()}
       </p>
+
+      <PassengerLiveLocation journeyId={journey.id} />
 
       <button
         onClick={() => onRequest(journey)}
