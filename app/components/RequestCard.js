@@ -6,6 +6,12 @@ export default function RequestCard({
   onAction,
   loading,
 }) {
+  const location = request.passengerLocation;
+
+  const mapUrl = location
+    ? `https://www.google.com/maps?q=${location.latitude},${location.longitude}`
+    : null;
+
   return (
     <article
       style={{
@@ -39,6 +45,21 @@ export default function RequestCard({
         <strong>Status:</strong> {request.status}
       </p>
 
+      {mapUrl ? (
+        <p>
+          <a
+            href={mapUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "blue", fontWeight: "bold" }}
+          >
+            View Passenger Location on Map
+          </a>
+        </p>
+      ) : (
+        <p>Passenger has not shared GPS location.</p>
+      )}
+
       {request.status === "Pending" && (
         <div style={{ display: "flex", gap: "10px" }}>
           <button
@@ -68,5 +89,4 @@ export default function RequestCard({
       )}
     </article>
   );
-}
-
+              }
