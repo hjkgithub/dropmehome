@@ -270,16 +270,37 @@ export async function POST(request) {
       );
     }
 
-    const newRequest = {
-      id: randomUUID(),
-      journeyId,
-      name: user.name,
-      email: user.email,
-      phone,
-      seatsRequested,
-      status: "Pending",
-      createdAt: Date.now(),
-    };
+     
+const passengerLocation = body.passengerLocation;
+
+const validLocation =
+  passengerLocation &&
+  Number.isFinite(passengerLocation.latitude) &&
+  Number.isFinite(passengerLocation.longitude) &&
+  passengerLocation.latitude >= -90 &&
+  passengerLocation.latitude <= 90 &&
+  passengerLocation.longitude >= -180 &&
+  passengerLocation.longitude <= 180
+    ? {
+        latitude: passengerLocation.latitude,
+        longitude: passengerLocation.longitude,
+      }
+    : null;
+
+const newRequest = {
+  id: randomUUID(),
+  journeyId,
+  name: user.name,
+  email: user.email,
+  phone,
+  seatsRequested,
+  passengerLocation: validLocation,
+  status: "Pending",
+  createdAt: Date.now(),
+};
+    
+
+    
 
     requests.push(newRequest);
 
