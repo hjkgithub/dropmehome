@@ -6,21 +6,47 @@ export default function JourneyCard({ journey, onRequest }) {
     <article
       style={{
         border: "1px solid #ddd",
-        borderRadius: "10px",
-        padding: "15px",
-        marginBottom: "15px",
+        borderRadius: "12px",
+        padding: "16px",
+        marginBottom: "16px",
+        background: "#fff",
+        color: "#222",
       }}
     >
-      <h3>{journey.name}</h3>
+      <h3 style={{ marginTop: 0 }}>
+        {journey.name}
+      </h3>
 
-      <p>Starting from: {journey.fromLocation || "Not specified"}</p>
+      {/* Journey Route */}
+      <div
+        style={{
+          background: "#f3f7ff",
+          padding: "14px",
+          borderRadius: "8px",
+          marginBottom: "14px",
+        }}
+      >
+        <small style={{ color: "#555" }}>
+          JOURNEY ROUTE
+        </small>
+
+        <h3
+          style={{
+            margin: "8px 0",
+            fontSize: "18px",
+            lineHeight: "1.5",
+            color: "#174ea6",
+          }}
+        >
+          {journey.fromLocation || "Starting location not specified"}
+          {" → "}
+          {journey.destination}
+        </h3>
+      </div>
 
       <p>
-        <strong>Destination:</strong> {journey.destination}
-      </p>
-
-      <p>
-        <strong>Vehicle:</strong> {journey.vehicle}
+        <strong>Vehicle:</strong>{" "}
+        {journey.vehicle}
       </p>
 
       <p>
@@ -28,24 +54,37 @@ export default function JourneyCard({ journey, onRequest }) {
         {journey.seatsAvailable}
       </p>
 
-      <small>
-        Expires:{" "}
+      <p>
+        <strong>Expires:</strong>{" "}
         {new Date(journey.expiresAt).toLocaleString()}
-      </small>
+      </p>
 
       <button
         onClick={() => onRequest(journey)}
         disabled={Number(journey.seatsAvailable) <= 0}
         style={{
           display: "block",
-          marginTop: "12px",
-          padding: "10px",
-          cursor: "pointer",
+          width: "100%",
+          marginTop: "14px",
+          padding: "12px",
+          background:
+            Number(journey.seatsAvailable) <= 0
+              ? "#999"
+              : "#2563eb",
+          color: "white",
+          border: "none",
+          borderRadius: "8px",
+          fontWeight: "bold",
+          cursor:
+            Number(journey.seatsAvailable) <= 0
+              ? "not-allowed"
+              : "pointer",
         }}
       >
-        Request Seats
+        {Number(journey.seatsAvailable) <= 0
+          ? "No Seats Available"
+          : "Request Seats"}
       </button>
     </article>
   );
-          }
-
+}
