@@ -260,40 +260,47 @@ export default function Home() {
     setRequestMessage("");
   }
 
-  async function handleRequestSubmit() {
-    if (!selectedJourney) return;
+  
+        
+async function handleRequestSubmit(passengerLocation) {
+  if (!selectedJourney) return;
 
-    setRequestLoading(true);
-    setRequestMessage("");
+  setRequestLoading(true);
+  setRequestMessage("");
 
-    try {
-      const response = await fetch("/api/requests", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          journeyId: selectedJourney.id,
-          ...requestForm,
-        }),
-      });
+  try {
+    const response = await fetch("/api/requests", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        journeyId: selectedJourney.id,
+        ...requestForm,
+        passengerLocation: passengerLocation || null,
+      }),
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (!response.ok) {
-        setRequestMessage(data.error || "Request failed.");
-        return;
-      }
-
-      setRequestMessage("Request submitted successfully!");
-      setSelectedJourney(null);
-      await loadJourneys();
-    } catch (error) {
-      setRequestMessage("Something went wrong. Please try again.");
-    } finally {
-      setRequestLoading(false);
+    if (!response.ok) {
+      setRequestMessage(data.error || "Request failed.");
+      return;
     }
+
+    setRequestMessage("Request submitted successfully!");
+    setSelectedJourney(null);
+    await loadJourneys();
+  } catch (error) {
+    setRequestMessage("Something went wrong. Please try again.");
+  } finally {
+    setRequestLoading(false);
   }
+}
+  
+
+
+      
 
   async function handleRequestAction(request, action) {
     setActionLoading(true);
