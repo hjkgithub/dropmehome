@@ -42,7 +42,7 @@ export default function JourneyCard({ journey, onRequest }) {
             color: "#174ea6",
           }}
         >
-           Driver is now in{" "}
+           Rider is now in{" "}
   {journey.fromLocation || "Unknown location"}
   {" and going to "}
   {journey.destination}
