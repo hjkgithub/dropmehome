@@ -70,6 +70,7 @@ export default function DriverDashboard({
   >
     <h4>{journey.name}</h4>
 
+    <p>Starting from: {journey.fromLocation}</p>
     <p>Destination: {journey.destination}</p>
     <p>Vehicle: {journey.vehicle}</p>
     <p>Available seats: {journey.seatsAvailable}</p>
