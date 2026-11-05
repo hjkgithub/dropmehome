@@ -287,20 +287,24 @@ async function handleRequestSubmit(passengerLocation) {
     const data = await response.json();
 
     if (!response.ok) {
-      setRequestMessage(data.error || "Request failed.");
-      return;
-    }
-
-    setRequestMessage("Request submitted successfully!");
-    setSelectedJourney(null);
-    await loadJourneys();
-  } catch (error) {
-    setRequestMessage("Something went wrong. Please try again.");
-  } finally {
-    setRequestLoading(false);
-  }
+  setRequestMessage(data.error || "Request failed.");
+  return;
 }
-  
+
+setRequestMessage("Request submitted successfully!");
+
+// Save passenger's shared GPS coordinates
+setMySharedLocation(passengerLocation || null);
+
+setSelectedJourney(null);
+await loadJourneys();
+} catch (error) {
+  setRequestMessage("Something went wrong. Please try again.");
+} finally {
+  setRequestLoading(false);
+}
+}
+    
 
 
       
