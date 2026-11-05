@@ -193,9 +193,17 @@ export async function GET(request) {
       `live_location:${journeyId}`,
     ]);
 
-    return NextResponse.json({
-      location: stored ? JSON.parse(stored) : null,
-    });
+    const location = stored ? JSON.parse(stored) : null;
+
+const isFresh =
+  location &&
+  Date.now() - location.updatedAt <= 30000;
+
+return NextResponse.json({
+  location: isFresh ? location : null,
+});
+
+    
   } catch (error) {
     console.error("Live location GET error:", error);
 
