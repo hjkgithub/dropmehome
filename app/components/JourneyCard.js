@@ -13,7 +13,7 @@ export default function JourneyCard({ journey, onRequest }) {
     >
       <h3>{journey.name}</h3>
 
-      <p>Starting from: {journey.fromLocation}</p>
+      <p>Starting from: {journey.fromLocation || "Not specified"}</p>
 
       <p>
         <strong>Destination:</strong> {journey.destination}
