@@ -40,6 +40,9 @@ export default function Home() {
 
   const [selectedJourney, setSelectedJourney] = useState(null);
 
+  const [mySharedLocation, setMySharedLocation] = useState(null);
+  
+  
   const [requestForm, setRequestForm] = useState({
     name: "",
     phone: "",
