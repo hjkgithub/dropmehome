@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useState } from "react";
 import JourneyCard from "./JourneyCard";
 
 export default function PassengerDashboard({
@@ -9,130 +10,85 @@ export default function PassengerDashboard({
   myRequests = [],
   userEmail,
 }) {
+  const [search, setSearch] = useState("");
+
   const otherJourneys = journeys.filter(
     (journey) => journey.ownerEmail !== userEmail
   );
 
+  const filteredJourneys = otherJourneys.filter((journey) => {
+    const searchText = search.toLowerCase().trim();
+
+    return (
+      (journey.name || "").toLowerCase().includes(searchText) ||
+      (journey.fromLocation || "").toLowerCase().includes(searchText) ||
+      (journey.destination || "").toLowerCase().includes(searchText) ||
+      (journey.vehicle || "").toLowerCase().includes(searchText)
+    );
+  });
+
   return (
     <section>
-      {/* MY REQUESTS */}
-      <div style={{
-        background: "white",
-        padding: "20px",
-        borderRadius: "14px",
-        marginBottom: "25px",
-        border: "1px solid #e6edf6",
-      }}>
-        <h2 style={{ color: "#173b70" }}>
-          My Ride Requests ({myRequests.length})
-        </h2>
+      <h2>Passenger Dashboard</h2>
 
-        {myRequests.length === 0 && (
-          <p style={{ color: "#718096" }}>
-            You haven't requested any rides yet.
-          </p>
-        )}
+      <h3>My Ride Requests</h3>
 
-        {myRequests.map((request) => {
-          const status = String(request.status || "")
-            .toLowerCase();
-
-          const accepted = status === "accepted";
-          const rejected = status === "rejected";
-
-          return (
-            <div
-              key={request.id}
-              style={{
-                padding: "15px",
-                marginTop: "12px",
-                borderRadius: "10px",
-                border: "1px solid #e6edf6",
-                background: "#f9fbff",
-              }}
-            >
-              <h3 style={{
-                margin: "0 0 8px",
-                color: "#173b70",
-              }}>
-                {request.journey?.destination || "Your requested journey"}
-              </h3>
-
-              <p style={{
-                margin: "5px 0",
-                color: "#65758b",
-                fontSize: "14px",
-              }}>
-                Seats requested: {request.seatsRequested}
-              </p>
-
-              <p style={{
-                margin: "5px 0",
-                color: "#65758b",
-                fontSize: "14px",
-              }}>
-                Vehicle: {request.journey?.vehicle || "N/A"}
-              </p>
-
-              <div style={{
-                display: "inline-block",
-                marginTop: "10px",
-                padding: "7px 13px",
-                borderRadius: "20px",
-                fontSize: "13px",
-                fontWeight: "bold",
-                background: accepted
-                  ? "#dcfce7"
-                  : rejected
-                  ? "#fee2e2"
-                  : "#fef3c7",
-                color: accepted
-                  ? "#166534"
-                  : rejected
-                  ? "#991b1b"
-                  : "#92400e",
-              }}>
-                {accepted
-                  ? "✓ Driver Accepted"
-                  : rejected
-                  ? "✕ Driver Rejected"
-                  : "⏳ Waiting for Driver"}
-              </div>
-
-              {accepted && (
-                <p style={{
-                  color: "#166534",
-                  fontSize: "13px",
-                  marginBottom: 0,
-                }}>
-                  Great! Your ride request has been accepted.
-                </p>
-              )}
-
-              {rejected && (
-                <p style={{
-                  color: "#991b1b",
-                  fontSize: "13px",
-                  marginBottom: 0,
-                }}>
-                  Your request was rejected. You can look for another ride.
-                </p>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* AVAILABLE RIDES */}
-      <h2>
-        Available Rides ({otherJourneys.length})
-      </h2>
-
-      {otherJourneys.length === 0 && (
-        <p>No other active journeys available right now.</p>
+      {myRequests.length === 0 && (
+        <p>You haven't requested any rides yet.</p>
       )}
 
-      {otherJourneys.map((journey) => {
+      {myRequests.map((request) => (
+        <article
+          key={request.id}
+          style={{
+            border: "1px solid #ddd",
+            borderRadius: "10px",
+            padding: "12px",
+            marginBottom: "10px",
+          }}
+        >
+          <h4>{request.journey?.destination || "Ride request"}</h4>
+          <p>
+            <strong>Vehicle:</strong>{" "}
+            {request.journey?.vehicle || "Not available"}
+          </p>
+          <p>
+            <strong>Seats requested:</strong>{" "}
+            {request.seatsRequested}
+          </p>
+          <p>
+            <strong>Status:</strong> {request.status}
+          </p>
+        </article>
+      ))}
+
+      <h3>Available Rides ({filteredJourneys.length})</h3>
+
+      <input
+        type="text"
+        placeholder="Search driver, location, destination or vehicle..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{
+          width: "100%",
+          padding: "13px",
+          border: "1px solid #ccc",
+          borderRadius: "8px",
+          marginBottom: "15px",
+          boxSizing: "border-box",
+          fontSize: "15px",
+        }}
+      />
+
+      {filteredJourneys.length === 0 && (
+        <p>
+          {search
+            ? "No matching rides found. Try another search."
+            : "No available rides right now."}
+        </p>
+      )}
+
+      {filteredJourneys.map((journey) => {
         const request = myRequests.find(
           (item) =>
             item.journeyId === journey.id &&
