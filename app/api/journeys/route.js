@@ -23,6 +23,7 @@ async function redisCommand(command) {
   if (!response.ok) throw new Error("Storage request failed");
 
   const data = await response.json();
+
   if (data.error) throw new Error(data.error);
 
   return data.result;
@@ -30,21 +31,48 @@ async function redisCommand(command) {
 
 async function getSession(request) {
   const token = request.cookies.get("journey_session")?.value;
+
   if (!token) return null;
 
-  const stored = await redisCommand(["GET", `session:${token}`]);
+  const stored = await redisCommand([
+    "GET",
+    `session:${token}`,
+  ]);
+
   return stored ? JSON.parse(stored) : null;
 }
 
 async function getActiveJourneys() {
   const stored = await redisCommand(["GET", "journeys"]);
+
   const journeys = stored ? JSON.parse(stored) : [];
 
-  return journeys.filter((item) => item.expiresAt > Date.now());
+  return journeys.filter(
+    (item) => item.expiresAt > Date.now()
+  );
 }
 
-export async function GET() {
+// GET: Drivers see only their own journeys.
+// Passengers see all available public journeys.
+
+export async function GET(request) {
   try {
+    const user = await getSession(request);
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Please log in first" },
+        { status: 401 }
+      );
+    }
+
+    if (!["driver", "passenger"].includes(user.role)) {
+      return NextResponse.json(
+        { error: "Invalid user role" },
+        { status: 403 }
+      );
+    }
+
     const journeys = await getActiveJourneys();
 
     await redisCommand([
@@ -55,14 +83,25 @@ export async function GET() {
       "86400",
     ]);
 
-    // Do not expose the driver's account email publicly.
-    const publicJourneys = journeys.map(
-      ({ ownerEmail, ...journey }) => journey
-    );
+    let visibleJourneys;
+
+    if (user.role === "driver") {
+      // Driver sees ONLY their own journeys.
+      visibleJourneys = journeys.filter(
+        (journey) => journey.ownerEmail === user.email
+      );
+    } else {
+      // Passengers can see all journeys,
+      // but never receive drivers' account emails.
+      visibleJourneys = journeys.map(
+        ({ ownerEmail, ...journey }) => journey
+      );
+    }
 
     return NextResponse.json({
-      journeys:publicJourneys
+      journeys: visibleJourneys,
     });
+
   } catch (error) {
     console.error("GET journeys error:", error);
 
@@ -72,6 +111,8 @@ export async function GET() {
     );
   }
 }
+
+// POST: Only drivers can publish journeys.
 
 export async function POST(request) {
   try {
@@ -85,11 +126,11 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    
-    const fromLocation = body.fromLocation?.trim();
-    const destination = body.destination?.trim();
-    const phone = body.phone?.trim();
-    const vehicle = body.vehicle?.trim();
+
+    const fromLocation = String(body.fromLocation || "").trim();
+    const destination = String(body.destination || "").trim();
+    const phone = String(body.phone || "").trim();
+    const vehicle = String(body.vehicle || "").trim();
     const seatsAvailable = Number(body.seatsAvailable);
 
     if (
@@ -114,48 +155,48 @@ export async function POST(request) {
       );
     }
 
-    if (destination.length > 120 || phone.length > 20) {
+    if (
+      fromLocation.length > 120 ||
+      destination.length > 120 ||
+      phone.length > 20
+    ) {
       return NextResponse.json(
         { error: "Input is too long" },
         { status: 400 }
       );
     }
 
-    
     const journeys = await getActiveJourneys();
 
-// Maximum 5 active journeys per driver
-const myJourneys = journeys.filter(
-  (journey) => journey.ownerEmail === user.email
-);
+    // Maximum 5 active journeys per driver.
+    const myJourneys = journeys.filter(
+      (journey) => journey.ownerEmail === user.email
+    );
 
-if (myJourneys.length >= 5) {
-  return NextResponse.json(
-    {
-      error: "You can publish a maximum of 5 active journeys. Delete one to publish another.",
-    },
-    { status: 400 }
-  );
-}
+    if (myJourneys.length >= 5) {
+      return NextResponse.json(
+        {
+          error: "You can publish a maximum of 5 active journeys. Delete one to publish another.",
+        },
+        { status: 400 }
+      );
+    }
 
-
-    
     const now = Date.now();
 
     const newJourney = {
-  id: randomUUID(),
-  name: user.name,
-  ownerEmail: user.email,
-  fromLocation: String(body.fromLocation || "").trim(),
-  destination,
-  phone,
-  vehicle,
-  seatsAvailable,
-  createdAt: now,
-  expiresAt: now + 2 * 60 * 60 * 1000,
-};
+      id: randomUUID(),
+      name: user.name,
+      ownerEmail: user.email,
+      fromLocation,
+      destination,
+      phone,
+      vehicle,
+      seatsAvailable,
+      createdAt: now,
+      expiresAt: now + 2 * 60 * 60 * 1000,
+    };
 
-    
     journeys.unshift(newJourney);
 
     await redisCommand([
@@ -175,6 +216,7 @@ if (myJourneys.length >= 5) {
       },
       { status: 201 }
     );
+
   } catch (error) {
     console.error("POST journeys error:", error);
 
@@ -183,8 +225,11 @@ if (myJourneys.length >= 5) {
       { status: 503 }
     );
   }
-} 
-      export async function DELETE(request) {
+}
+
+// DELETE: Drivers can delete ONLY their own journeys.
+
+export async function DELETE(request) {
   try {
     const user = await getSession(request);
 
@@ -232,12 +277,16 @@ if (myJourneys.length >= 5) {
       "86400",
     ]);
 
-    // Remove requests belonging to this journey.
-    await redisCommand(["DEL", `requests:${journeyId}`]);
+    // Delete requests belonging to this journey.
+    await redisCommand([
+      "DEL",
+      `requests:${journeyId}`,
+    ]);
 
     return NextResponse.json({
       message: "Journey deleted successfully",
     });
+
   } catch (error) {
     console.error("DELETE journey error:", error);
 
@@ -246,4 +295,4 @@ if (myJourneys.length >= 5) {
       { status: 503 }
     );
   }
-      }
+}
