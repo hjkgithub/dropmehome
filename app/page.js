@@ -164,6 +164,22 @@ export default function Home() {
   const [driverRequests, setDriverRequests] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
   const [driverRequestMessage, setDriverRequestMessage] = useState("");
+  const [myRequests, setMyRequests] = useState([]);
+  async function loadMyRequests() {
+  try {
+    const response = await fetch("/api/requests", {
+      cache: "no-store",
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      setMyRequests(data.requests || []);
+    }
+  } catch (error) {
+    console.error("Passenger request loading failed:", error);
+  }
+  }
 
   useEffect(() => {
     async function checkSession() {
@@ -227,24 +243,32 @@ export default function Home() {
   }
 
   useEffect(() => {
-    if (!user) return;
+  if (!user) return;
 
+  loadJourneys();
+
+  if (user.role === "driver") {
+    loadDriverRequests();
+  }
+
+  if (user.role === "passenger") {
+    loadMyRequests();
+  }
+
+  const interval = setInterval(() => {
     loadJourneys();
 
     if (user.role === "driver") {
       loadDriverRequests();
     }
 
-    const interval = setInterval(() => {
-      loadJourneys();
+    if (user.role === "passenger") {
+      loadMyRequests();
+    }
+  }, 5000);
 
-      if (user.role === "driver") {
-        loadDriverRequests();
-      }
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [user]);
+  return () => clearInterval(interval);
+}, [user]);
 
   async function handleAuth() {
     setAuthLoading(true);
@@ -404,6 +428,8 @@ export default function Home() {
       setSelectedJourney(null);
 
       await loadJourneys();
+      await loadMyRequests();
+      
     } catch (error) {
       setRequestMessage("Something went wrong. Please try again.");
     } finally {
