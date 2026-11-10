@@ -7,18 +7,24 @@ export default function PassengerDashboard({
   journeys,
   onRequest,
   myRequests = [],
+  userEmail,
 }) {
+  const otherJourneys = journeys.filter(
+    (journey) =>
+      journey.ownerEmail !== userEmail
+  );
+
   return (
     <section>
       <h2>
-        Available Rides ({journeys.length})
+        Available Rides ({otherJourneys.length})
       </h2>
 
-      {journeys.length === 0 && (
-        <p>No active journeys available right now.</p>
+      {otherJourneys.length === 0 && (
+        <p>No other active journeys available right now.</p>
       )}
 
-      {journeys.map((journey) => {
+      {otherJourneys.map((journey) => {
         const request = myRequests.find(
           (item) =>
             item.journeyId === journey.id &&
