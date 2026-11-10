@@ -165,6 +165,13 @@ export default function Home() {
   const [actionLoading, setActionLoading] = useState(false);
   const [driverRequestMessage, setDriverRequestMessage] = useState("");
   const [myRequests, setMyRequests] = useState([]);
+
+  const myDriverJourneys = journeys.filter(
+  (journey) => journey.ownerEmail === user?.email
+);
+  
+
+  
   async function loadMyRequests() {
   try {
     const response = await fetch("/api/requests", {
@@ -763,7 +770,7 @@ export default function Home() {
           padding: "0 20px",
         }}>
           <DriverDashboard
-            journeys={journeys}
+            journeys={myDriverJourneys}
             onDelete={handleDeleteJourney}
             journeyForm={journeyForm}
             setJourneyForm={setJourneyForm}
