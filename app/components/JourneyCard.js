@@ -50,22 +50,26 @@ export default function JourneyCard({
         </h3>
 
         <p
-          style={{
-            fontSize: "12px",
-            color: "#777",
-            marginTop: "6px",
-          }}
-        >
-          Posted at:{" "}
-          {new Date(journey.createdAt).toLocaleString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          })}
-        </p>
+  style={{
+    fontSize: "12px",
+    color: "#777",
+    marginTop: "6px",
+  }}
+>
+  Posted at:{" "}
+  {journey.createdAt &&
+  Number.isFinite(Number(journey.createdAt)) &&
+  Number(journey.createdAt) > 0
+    ? new Date(Number(journey.createdAt)).toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      })
+    : "Time unavailable"}
+</p>
       </div>
 
       <p>
