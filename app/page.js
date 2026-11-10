@@ -770,7 +770,7 @@ export default function Home() {
           padding: "0 20px",
         }}>
           <DriverDashboard
-            journeys={myDriverJourneys}
+            journeys={journeys}
             onDelete={handleDeleteJourney}
             journeyForm={journeyForm}
             setJourneyForm={setJourneyForm}
