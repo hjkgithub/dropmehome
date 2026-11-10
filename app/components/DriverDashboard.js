@@ -1,3 +1,4 @@
+
 "use client";
 
 import RequestCard from "./RequestCard";
@@ -21,6 +22,26 @@ export default function DriverDashboard({
       ...prev,
       [field]: value,
     }));
+  }
+
+  function formatDateTime(timestamp) {
+    if (
+      !timestamp ||
+      !Number.isFinite(Number(timestamp)) ||
+      Number(timestamp) <= 0
+    ) {
+      return "Time unavailable";
+    }
+
+    return new Date(Number(timestamp)).toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
   }
 
   const pending = driverRequests.filter(
@@ -64,14 +85,51 @@ export default function DriverDashboard({
             borderRadius: "10px",
             padding: "15px",
             marginBottom: "15px",
+            background: "#fff",
+            color: "#222",
           }}
         >
           <h4>{journey.name}</h4>
 
-          <p>Starting from: {journey.fromLocation}</p>
-          <p>Destination: {journey.destination}</p>
-          <p>Vehicle: {journey.vehicle}</p>
-          <p>Available seats: {journey.seatsAvailable}</p>
+          <p>
+            <strong>Starting from:</strong>{" "}
+            {journey.fromLocation}
+          </p>
+
+          <p>
+            <strong>Destination:</strong>{" "}
+            {journey.destination}
+          </p>
+
+          <p>
+            <strong>Vehicle:</strong> {journey.vehicle}
+          </p>
+
+          <p>
+            <strong>Available seats:</strong>{" "}
+            {journey.seatsAvailable}
+          </p>
+
+          <div
+            style={{
+              background: "#f3f7ff",
+              padding: "12px",
+              borderRadius: "8px",
+              marginTop: "12px",
+            }}
+          >
+            <p>
+              <strong>Posted date & time:</strong>
+              <br />
+              {formatDateTime(journey.createdAt)} IST
+            </p>
+
+            <p style={{ marginBottom: 0 }}>
+              <strong>Expires at:</strong>
+              <br />
+              {formatDateTime(journey.expiresAt)} IST
+            </p>
+          </div>
 
           {/* DRIVER LIVE GPS SHARING */}
           <DriverLiveLocation journeyId={journey.id} />
