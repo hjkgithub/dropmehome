@@ -760,10 +760,13 @@ export default function Home() {
           margin: "20px auto 50px",
           padding: "0 20px",
         }}>
-          <PassengerDashboard
-            journeys={journeys}
-            onRequest={openRequest}
-          />
+          
+              <PassengerDashboard
+  journeys={journeys}
+  onRequest={openRequest}
+  myRequests={myRequests}
+  userEmail={user?.email}
+/>
         </div>
       )}
 
