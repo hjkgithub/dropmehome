@@ -51,38 +51,66 @@ async function getRequests(journeyId) {
 }
 
 // Driver: see requests for their own journeys
+
 export async function GET(request) {
   try {
     const user = await getSession(request);
 
-    if (!user || user.role !== "driver") {
+    if (!user) {
       return NextResponse.json(
-        { error: "Driver login required" },
+        { error: "Please log in first" },
         { status: 401 }
       );
     }
 
     const journeys = await getJourneys();
-
-    const ownJourneys = journeys.filter(
-      (journey) => journey.ownerEmail === user.email
-    );
-
     const results = [];
 
-    for (const journey of ownJourneys) {
-      const requests = await getRequests(journey.id);
+    // Driver: retrieve requests for their own journeys
+    if (user.role === "driver") {
+      const ownJourneys = journeys.filter(
+        (journey) => journey.ownerEmail === user.email
+      );
 
-      for (const item of requests) {
-        results.push({
-          ...item,
-          journey: {
-            id: journey.id,
-            destination: journey.destination,
-            vehicle: journey.vehicle,
-          },
-        });
+      for (const journey of ownJourneys) {
+        const requests = await getRequests(journey.id);
+
+        for (const item of requests) {
+          results.push({
+            ...item,
+            journey: {
+              id: journey.id,
+              destination: journey.destination,
+              vehicle: journey.vehicle,
+            },
+          });
+        }
       }
+    }
+
+    // Passenger: retrieve only their own requests
+    else if (user.role === "passenger") {
+      for (const journey of journeys) {
+        const requests = await getRequests(journey.id);
+
+        for (const item of requests) {
+          if (item.email === user.email) {
+            results.push({
+              ...item,
+              journey: {
+                id: journey.id,
+                destination: journey.destination,
+                vehicle: journey.vehicle,
+              },
+            });
+          }
+        }
+      }
+    } else {
+      return NextResponse.json(
+        { error: "Invalid user role" },
+        { status: 403 }
+      );
     }
 
     results.sort((a, b) => b.createdAt - a.createdAt);
@@ -94,11 +122,13 @@ export async function GET(request) {
     console.error("GET requests error:", error);
 
     return NextResponse.json(
-      { error: "Unable to load passenger requests" },
+      { error: "Unable to load requests" },
       { status: 503 }
     );
   }
 }
+
+    
 
 // Passenger: submit a seat request
 // Driver: accept or reject a request
