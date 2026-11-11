@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import {
   randomBytes,
@@ -6,9 +7,11 @@ import {
   timingSafeEqual,
 } from "crypto";
 import { promisify } from "util";
+import { sendVerificationEmail } from "../../lib/mailer";
 
 const scrypt = promisify(scryptCallback);
 const SESSION_SECONDS = 3 * 60 * 60;
+const VERIFICATION_SECONDS = 60 * 60;
 
 async function redisCommand(command) {
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -41,7 +44,6 @@ async function redisCommand(command) {
   return data.result;
 }
 
-// Generate a private Redis key for each email
 function emailKey(email) {
   const hash = createHash("sha256")
     .update(email)
@@ -50,22 +52,20 @@ function emailKey(email) {
   return `user:${hash}`;
 }
 
-// Secure password hashing
 async function hashPassword(password, salt) {
   const result = await scrypt(password, salt, 64);
   return result.toString("hex");
 }
 
-// Never expose password or salt
 function safeUser(user) {
   return {
     name: user.name,
     email: user.email,
     role: user.role || "",
+    emailVerified: user.emailVerified === true,
   };
 }
 
-// Create a 3-hour session
 async function createSession(user) {
   const token = randomBytes(32).toString("hex");
 
@@ -80,7 +80,6 @@ async function createSession(user) {
   return token;
 }
 
-// Set secure session cookie
 function setSessionCookie(response, token) {
   response.cookies.set("journey_session", token, {
     httpOnly: true,
@@ -89,6 +88,24 @@ function setSessionCookie(response, token) {
     path: "/",
     maxAge: SESSION_SECONDS,
   });
+}
+
+async function createVerification(email) {
+  const token = randomBytes(32).toString("hex");
+
+  const tokenHash = createHash("sha256")
+    .update(token)
+    .digest("hex");
+
+  await redisCommand([
+    "SET",
+    `email-verification:${tokenHash}`,
+    email,
+    "EX",
+    String(VERIFICATION_SECONDS),
+  ]);
+
+  await sendVerificationEmail(email, token);
 }
 
 // REGISTER AND LOGIN
@@ -130,7 +147,7 @@ export async function POST(request) {
 
     const key = emailKey(email);
 
-    // CREATE ACCOUNT
+    // REGISTER
     if (action === "register") {
       const name = String(body.name || "").trim();
       const role = body.role;
@@ -162,10 +179,10 @@ export async function POST(request) {
         role,
         salt,
         passwordHash,
+        emailVerified: false,
         createdAt: Date.now(),
       };
 
-      // NX prevents duplicate email registration
       const result = await redisCommand([
         "SET",
         key,
@@ -180,16 +197,23 @@ export async function POST(request) {
         );
       }
 
-      const token = await createSession(user);
+      let emailSent = true;
 
-      const response = NextResponse.json({
-        message: "Account created successfully",
-        user: safeUser(user),
+      try {
+        await createVerification(email);
+      } catch (error) {
+        console.error("Verification sending failed:", error);
+        emailSent = false;
+      }
+
+      return NextResponse.json({
+        verificationRequired: true,
+        email,
+        emailSent,
+        message: emailSent
+          ? "Account created. Please check your email to verify your account."
+          : "Account created, but the verification email could not be sent. Please request another verification email.",
       });
-
-      setSessionCookie(response, token);
-
-      return response;
     }
 
     // LOGIN
@@ -213,15 +237,8 @@ export async function POST(request) {
         user.salt
       );
 
-      const submitted = Buffer.from(
-        passwordHash,
-        "hex"
-      );
-
-      const saved = Buffer.from(
-        user.passwordHash,
-        "hex"
-      );
+      const submitted = Buffer.from(passwordHash, "hex");
+      const saved = Buffer.from(user.passwordHash, "hex");
 
       if (
         submitted.length !== saved.length ||
@@ -230,6 +247,17 @@ export async function POST(request) {
         return NextResponse.json(
           { error: "Invalid email or password" },
           { status: 401 }
+        );
+      }
+
+      if (user.emailVerified !== true) {
+        return NextResponse.json(
+          {
+            error: "Please verify your email before logging in.",
+            verificationRequired: true,
+            email,
+          },
+          { status: 403 }
         );
       }
 
@@ -277,17 +305,39 @@ export async function GET(request) {
     ]);
 
     if (!stored) {
-      const response = NextResponse.json({
-        user: null,
-      });
-
+      const response = NextResponse.json({ user: null });
       response.cookies.delete("journey_session");
+      return response;
+    }
 
+    const sessionUser = JSON.parse(stored);
+
+    // Check the current account's verification status
+    const account = await redisCommand([
+      "GET",
+      emailKey(sessionUser.email),
+    ]);
+
+    if (!account) {
+      await redisCommand(["DEL", `session:${token}`]);
+
+      const response = NextResponse.json({ user: null });
+      response.cookies.delete("journey_session");
+      return response;
+    }
+
+    const user = JSON.parse(account);
+
+    if (user.emailVerified !== true) {
+      await redisCommand(["DEL", `session:${token}`]);
+
+      const response = NextResponse.json({ user: null });
+      response.cookies.delete("journey_session");
       return response;
     }
 
     return NextResponse.json({
-      user: JSON.parse(stored),
+      user: safeUser(user),
     });
 
   } catch (error) {
@@ -330,4 +380,4 @@ export async function DELETE(request) {
       { status: 503 }
     );
   }
-    }
+}
