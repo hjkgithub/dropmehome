@@ -1,7 +1,9 @@
 
 import { NextResponse } from "next/server";
 import { randomBytes, createHash } from "crypto";
-import { sendVerificationEmail } from "@/app/lib/mailer";
+import { sendVerificationEmail } from "../../../lib/mailer";
+
+
 
 const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
 const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
