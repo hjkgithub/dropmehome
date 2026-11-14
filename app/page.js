@@ -762,6 +762,86 @@ export default function Home() {
         </section>
       )}
 
+{/* EMAIL VERIFICATION SCREEN */}
+{!user && screen === "verification" && (
+  <section style={{
+    maxWidth: "520px",
+    margin: "40px auto",
+    padding: "35px 25px",
+    background: "white",
+    borderRadius: "18px",
+    textAlign: "center",
+    boxShadow: "0 8px 30px rgba(24,55,95,0.08)",
+  }}>
+    <div style={{ fontSize: "55px" }}>📩</div>
+
+    <h2 style={{ color: "#173b70" }}>
+      Check Your Email
+    </h2>
+
+    <p style={{ color: "#65758b", lineHeight: "1.7" }}>
+      We have created your Journey Share account.
+      Please verify your email address to continue.
+    </p>
+
+    <p style={{
+      fontWeight: "bold",
+      color: "#1764c0",
+      overflowWrap: "anywhere",
+    }}>
+      {verificationEmail}
+    </p>
+
+    <p style={{ color: "#16845b", lineHeight: "1.6" }}>
+      {verificationMessage}
+    </p>
+
+    <button
+      onClick={handleResendVerification}
+      disabled={verificationLoading}
+      style={{
+        width: "100%",
+        padding: "14px",
+        marginTop: "15px",
+        border: "none",
+        borderRadius: "10px",
+        background: "#1764c0",
+        color: "white",
+        fontWeight: "bold",
+        cursor: "pointer",
+        opacity: verificationLoading ? 0.6 : 1,
+      }}
+    >
+      {verificationLoading
+        ? "Sending..."
+        : "Resend Verification Email"}
+    </button>
+
+    <button
+      onClick={() => {
+        setAuthMode("login");
+        setAuthMessage("");
+        setScreen("auth");
+      }}
+      style={{
+        width: "100%",
+        padding: "14px",
+        marginTop: "12px",
+        border: "1px solid #d5dfed",
+        borderRadius: "10px",
+        background: "white",
+        color: "#173b70",
+        fontWeight: "bold",
+        cursor: "pointer",
+      }}
+    >
+      Back to Login
+    </button>
+  </section>
+)}
+
+
+
       {/* DRIVER DASHBOARD */}
       {user && user.role === "driver" && (
         <div style={{
