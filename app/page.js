@@ -165,6 +165,9 @@ export default function Home() {
   const [actionLoading, setActionLoading] = useState(false);
   const [driverRequestMessage, setDriverRequestMessage] = useState("");
   const [myRequests, setMyRequests] = useState([]);
+  const [verificationEmail, setVerificationEmail] = useState("");
+const [verificationMessage, setVerificationMessage] = useState("");
+const [verificationLoading, setVerificationLoading] = useState(false);
 
   const myDriverJourneys = journeys.filter(
   (journey) => journey.ownerEmail === user?.email
@@ -277,40 +280,63 @@ export default function Home() {
   return () => clearInterval(interval);
 }, [user]);
 
-  async function handleAuth() {
-    setAuthLoading(true);
-    setAuthMessage("");
+  
+async function handleAuth() {
+  setAuthLoading(true);
+  setAuthMessage("");
 
-    try {
-      const response = await fetch("/api/auth", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: authMode,
-          ...authForm,
-          role,
-        }),
-      });
+  try {
+    const response = await fetch("/api/auth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        action: authMode,
+        ...authForm,
+        role,
+      }),
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (!response.ok) {
-        setAuthMessage(data.error || "Authentication failed.");
-        return;
-      }
+    if (!response.ok) {
+      setAuthMessage(data.error || "Authentication failed.");
+      return;
+    }
 
+    // Registration successful, verification required
+    if (authMode === "register" && data.verificationRequired) {
+      setVerificationEmail(data.email || authForm.email);
+
+      setVerificationMessage(
+        data.emailSent
+          ? "Verification email sent successfully. Please check your inbox."
+          : "Account created, but email sending failed. Please resend."
+      );
+
+      setScreen("verification");
+      return;
+    }
+
+    // Login successful
+    if (data.user) {
       setUser(data.user);
       setRole(data.user.role);
       setScreen("dashboard");
-      setAuthMessage("");
-    } catch (error) {
-      setAuthMessage("Something went wrong. Please try again.");
-    } finally {
-      setAuthLoading(false);
+      return;
     }
+
+    setAuthMessage("Unexpected server response. Please try again.");
+
+  } catch (error) {
+    console.error("Authentication error:", error);
+    setAuthMessage("Something went wrong. Please try again.");
+  } finally {
+    setAuthLoading(false);
   }
+    }
+  
 
   async function handleLogout() {
     try {
