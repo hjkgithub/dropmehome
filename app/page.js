@@ -299,6 +299,15 @@ async function handleAuth() {
     });
 
     const data = await response.json();
+    // Handle unverified email during login
+if (data.verificationRequired) {
+  setVerificationEmail(data.email || authForm.email);
+  setVerificationMessage(
+    data.error || "Please verify your email."
+  );
+  setScreen("verification");
+  return;
+}
 
     if (!response.ok) {
       setAuthMessage(data.error || "Authentication failed.");
