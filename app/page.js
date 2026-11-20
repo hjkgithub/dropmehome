@@ -321,12 +321,14 @@ async function handleAuth() {
     }
 
     // Login successful
-    if (data.user) {
-      setUser(data.user);
-      setRole(data.user.role);
-      setScreen("dashboard");
-      return;
-    }
+  
+if (data.user) {
+  setUser(data.user);
+  setRole(null);
+  setScreen("mode-selection");
+  return;
+}
+    
 
     setAuthMessage("Unexpected server response. Please try again.");
 
