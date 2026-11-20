@@ -281,6 +281,7 @@ const [verificationLoading, setVerificationLoading] = useState(false);
 }, [user]);
 
   
+
 async function handleAuth() {
   setAuthLoading(true);
   setAuthMessage("");
@@ -299,29 +300,20 @@ async function handleAuth() {
     });
 
     const data = await response.json();
-    // Handle unverified email during login
-if (data.verificationRequired) {
-  setVerificationEmail(data.email || authForm.email);
-  setVerificationMessage(
-    data.error || "Please verify your email."
-  );
-  setScreen("verification");
-  return;
-}
 
     if (!response.ok) {
       setAuthMessage(data.error || "Authentication failed.");
       return;
     }
 
-    // Registration successful, verification required
-    if (authMode === "register" && data.verificationRequired) {
+    // Registration or login requires email verification
+    if (data.verificationRequired) {
       setVerificationEmail(data.email || authForm.email);
 
       setVerificationMessage(
         data.emailSent
           ? "Verification email sent successfully. Please check your inbox."
-          : "Account created, but email sending failed. Please resend."
+          : data.error || "Account created, but email sending failed. Please resend."
       );
 
       setScreen("verification");
@@ -344,7 +336,10 @@ if (data.verificationRequired) {
   } finally {
     setAuthLoading(false);
   }
-    }
+}
+
+
+   
   
 
   async function handleLogout() {
