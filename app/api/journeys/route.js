@@ -34,17 +34,13 @@ async function getSession(request) {
 
   if (!token) return null;
 
-  const stored = await redisCommand([
-    "GET",
-    `session:${token}`,
-  ]);
+  const stored = await redisCommand(["GET", `session:${token}`]);
 
   return stored ? JSON.parse(stored) : null;
 }
 
 async function getActiveJourneys() {
   const stored = await redisCommand(["GET", "journeys"]);
-
   const journeys = stored ? JSON.parse(stored) : [];
 
   return journeys.filter(
@@ -52,9 +48,7 @@ async function getActiveJourneys() {
   );
 }
 
-// GET: Drivers see only their own journeys.
-// Passengers see all available public journeys.
-
+// GET: Results depend on the currently selected mode.
 export async function GET(request) {
   try {
     const user = await getSession(request);
@@ -66,10 +60,12 @@ export async function GET(request) {
       );
     }
 
-    if (!["driver", "passenger"].includes(user.role)) {
+    const mode = request.nextUrl.searchParams.get("mode");
+
+    if (!["driver", "passenger"].includes(mode)) {
       return NextResponse.json(
-        { error: "Invalid user role" },
-        { status: 403 }
+        { error: "Please select a valid mode" },
+        { status: 400 }
       );
     }
 
@@ -85,23 +81,21 @@ export async function GET(request) {
 
     let visibleJourneys;
 
-    if (user.role === "driver") {
-      // Driver sees ONLY their own journeys.
+    if (mode === "driver") {
+      // Rider mode: only show journeys owned by this account.
       visibleJourneys = journeys.filter(
         (journey) => journey.ownerEmail === user.email
       );
     } else {
-      // Passengers can see all journeys,
-      // but never receive drivers' account emails.
-      visibleJourneys = journeys.map(
-        ({ ownerEmail, ...journey }) => journey
-      );
+      // Passenger mode: show other people's journeys only.
+      visibleJourneys = journeys
+        .filter((journey) => journey.ownerEmail !== user.email)
+        .map(({ ownerEmail, ...journey }) => journey);
     }
 
     return NextResponse.json({
       journeys: visibleJourneys,
     });
-
   } catch (error) {
     console.error("GET journeys error:", error);
 
@@ -112,15 +106,14 @@ export async function GET(request) {
   }
 }
 
-// POST: Only drivers can publish journeys.
-
+// POST: Any logged-in account can publish a journey.
 export async function POST(request) {
   try {
     const user = await getSession(request);
 
-    if (!user || user.role !== "driver") {
+    if (!user) {
       return NextResponse.json(
-        { error: "Only logged-in drivers can publish journeys" },
+        { error: "Please log in first" },
         { status: 401 }
       );
     }
@@ -168,7 +161,6 @@ export async function POST(request) {
 
     const journeys = await getActiveJourneys();
 
-    // Maximum 5 active journeys per driver.
     const myJourneys = journeys.filter(
       (journey) => journey.ownerEmail === user.email
     );
@@ -216,7 +208,6 @@ export async function POST(request) {
       },
       { status: 201 }
     );
-
   } catch (error) {
     console.error("POST journeys error:", error);
 
@@ -227,15 +218,14 @@ export async function POST(request) {
   }
 }
 
-// DELETE: Drivers can delete ONLY their own journeys.
-
+// DELETE: An account can delete only its own journeys.
 export async function DELETE(request) {
   try {
     const user = await getSession(request);
 
-    if (!user || user.role !== "driver") {
+    if (!user) {
       return NextResponse.json(
-        { error: "Driver login required" },
+        { error: "Please log in first" },
         { status: 401 }
       );
     }
@@ -277,7 +267,6 @@ export async function DELETE(request) {
       "86400",
     ]);
 
-    // Delete requests belonging to this journey.
     await redisCommand([
       "DEL",
       `requests:${journeyId}`,
@@ -286,7 +275,6 @@ export async function DELETE(request) {
     return NextResponse.json({
       message: "Journey deleted successfully",
     });
-
   } catch (error) {
     console.error("DELETE journey error:", error);
 
@@ -296,3 +284,5 @@ export async function DELETE(request) {
     );
   }
 }
+
+   
