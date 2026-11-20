@@ -42,16 +42,11 @@ async function getJourneys() {
 }
 
 async function getRequests(journeyId) {
-  const stored = await redisCommand([
-    "GET",
-    `requests:${journeyId}`,
-  ]);
-
+  const stored = await redisCommand(["GET", `requests:${journeyId}`]);
   return stored ? JSON.parse(stored) : [];
 }
 
-// Driver: see requests for their own journeys
-
+// GET: Load requests according to selected mode.
 export async function GET(request) {
   try {
     const user = await getSession(request);
@@ -63,11 +58,19 @@ export async function GET(request) {
       );
     }
 
+    const mode = request.nextUrl.searchParams.get("mode");
+
+    if (!["driver", "passenger"].includes(mode)) {
+      return NextResponse.json(
+        { error: "Please select a valid mode" },
+        { status: 400 }
+      );
+    }
+
     const journeys = await getJourneys();
     const results = [];
 
-    // Driver: retrieve requests for their own journeys
-    if (user.role === "driver") {
+    if (mode === "driver") {
       const ownJourneys = journeys.filter(
         (journey) => journey.ownerEmail === user.email
       );
@@ -86,10 +89,7 @@ export async function GET(request) {
           });
         }
       }
-    }
-
-    // Passenger: retrieve only their own requests
-    else if (user.role === "passenger") {
+    } else {
       for (const journey of journeys) {
         const requests = await getRequests(journey.id);
 
@@ -106,18 +106,11 @@ export async function GET(request) {
           }
         }
       }
-    } else {
-      return NextResponse.json(
-        { error: "Invalid user role" },
-        { status: 403 }
-      );
     }
 
     results.sort((a, b) => b.createdAt - a.createdAt);
 
-    return NextResponse.json({
-      requests: results,
-    });
+    return NextResponse.json({ requests: results });
   } catch (error) {
     console.error("GET requests error:", error);
 
@@ -128,10 +121,7 @@ export async function GET(request) {
   }
 }
 
-    
-
-// Passenger: submit a seat request
-// Driver: accept or reject a request
+// POST: Submit a seat request or process an existing request.
 export async function POST(request) {
   try {
     const user = await getSession(request);
@@ -145,17 +135,17 @@ export async function POST(request) {
 
     const body = await request.json();
 
-    // Driver accepts or rejects a request
+    // Accept or reject a request.
     if (body.action === "accept" || body.action === "reject") {
-      if (user.role !== "driver") {
-        return NextResponse.json(
-          { error: "Driver login required" },
-          { status: 403 }
-        );
-      }
-
       const journeyId = String(body.journeyId || "");
       const requestId = String(body.requestId || "");
+
+      if (!journeyId || !requestId) {
+        return NextResponse.json(
+          { error: "Journey ID and request ID are required" },
+          { status: 400 }
+        );
+      }
 
       const journeys = await getJourneys();
 
@@ -172,7 +162,6 @@ export async function POST(request) {
         );
       }
 
-      const redisKey = `requests:${journeyId}`;
       const requests = await getRequests(journeyId);
 
       const target = requests.find(
@@ -219,7 +208,7 @@ export async function POST(request) {
 
       await redisCommand([
         "SET",
-        redisKey,
+        `requests:${journeyId}`,
         JSON.stringify(requests),
         "EX",
         "86400",
@@ -234,14 +223,7 @@ export async function POST(request) {
       });
     }
 
-    // Passenger submits a new request
-    if (user.role !== "passenger") {
-      return NextResponse.json(
-        { error: "Passenger login required" },
-        { status: 403 }
-      );
-    }
-
+    // Submit a new passenger request.
     const journeyId = String(body.journeyId || "").trim();
     const phone = String(body.phone || "").trim();
     const seatsRequested = Number(body.seatsRequested);
@@ -263,7 +245,9 @@ export async function POST(request) {
     const journeys = await getJourneys();
 
     const journey = journeys.find(
-      (item) => item.id === journeyId
+      (item) =>
+        item.id === journeyId &&
+        item.ownerEmail !== user.email
     );
 
     if (!journey) {
@@ -273,7 +257,6 @@ export async function POST(request) {
       );
     }
 
-    const redisKey = `requests:${journeyId}`;
     const requests = await getRequests(journeyId);
 
     const pendingSeats = requests
@@ -300,43 +283,39 @@ export async function POST(request) {
       );
     }
 
-     
-const passengerLocation = body.passengerLocation;
+    const passengerLocation = body.passengerLocation;
 
-const validLocation =
-  passengerLocation &&
-  Number.isFinite(passengerLocation.latitude) &&
-  Number.isFinite(passengerLocation.longitude) &&
-  passengerLocation.latitude >= -90 &&
-  passengerLocation.latitude <= 90 &&
-  passengerLocation.longitude >= -180 &&
-  passengerLocation.longitude <= 180
-    ? {
-        latitude: passengerLocation.latitude,
-        longitude: passengerLocation.longitude,
-      }
-    : null;
+    const validLocation =
+      passengerLocation &&
+      Number.isFinite(passengerLocation.latitude) &&
+      Number.isFinite(passengerLocation.longitude) &&
+      passengerLocation.latitude >= -90 &&
+      passengerLocation.latitude <= 90 &&
+      passengerLocation.longitude >= -180 &&
+      passengerLocation.longitude <= 180
+        ? {
+            latitude: passengerLocation.latitude,
+            longitude: passengerLocation.longitude,
+          }
+        : null;
 
-const newRequest = {
-  id: randomUUID(),
-  journeyId,
-  name: user.name,
-  email: user.email,
-  phone,
-  seatsRequested,
-  passengerLocation: validLocation,
-  status: "Pending",
-  createdAt: Date.now(),
-};
-    
-
-    
+    const newRequest = {
+      id: randomUUID(),
+      journeyId,
+      name: user.name,
+      email: user.email,
+      phone,
+      seatsRequested,
+      passengerLocation: validLocation,
+      status: "Pending",
+      createdAt: Date.now(),
+    };
 
     requests.push(newRequest);
 
     await redisCommand([
       "SET",
-      redisKey,
+      `requests:${journeyId}`,
       JSON.stringify(requests),
       "EX",
       "86400",
@@ -361,3 +340,5 @@ const newRequest = {
     );
   }
 }
+
+
