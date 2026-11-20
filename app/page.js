@@ -338,6 +338,46 @@ async function handleAuth() {
   }
 }
 
+async function handleResendVerification() {
+  if (!verificationEmail) {
+    setVerificationMessage("Email address is missing.");
+    return;
+  }
+
+  setVerificationLoading(true);
+  setVerificationMessage("");
+
+  try {
+    const response = await fetch("/api/email-verification/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: verificationEmail,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      setVerificationMessage(
+        data.error || "Unable to resend verification email."
+      );
+      return;
+    }
+
+    setVerificationMessage(
+      data.message || "Verification email sent successfully. Please check your inbox."
+    );
+  } catch (error) {
+    console.error("Resend verification error:", error);
+    setVerificationMessage("Something went wrong. Please try again.");
+  } finally {
+    setVerificationLoading(false);
+  }
+}
+  
 
    
   
