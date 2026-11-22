@@ -125,6 +125,7 @@ export default function Home() {
 
   const [screen, setScreen] = useState("home");
   const [role, setRole] = useState("passenger");
+  const [mode, setMode] = useState(null);
 
   const [authMode, setAuthMode] = useState("register");
   const [authForm, setAuthForm] = useState({
