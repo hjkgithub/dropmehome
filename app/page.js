@@ -976,7 +976,7 @@ function handleSwitchMode() {
 
 
       {/* DRIVER DASHBOARD */}
-      {user && user.role === "driver" && (
+      {user && mode === "driver" && screen === "dashboard" && (
         <div style={{
           maxWidth: "1000px",
           margin: "20px auto 50px",
@@ -1000,7 +1000,7 @@ function handleSwitchMode() {
       )}
 
       {/* PASSENGER DASHBOARD */}
-      {user && user.role === "passenger" && (
+      {user && mode === "passenger" && screen === "dashboard" && (
         <div style={{
           maxWidth: "1000px",
           margin: "20px auto 50px",
