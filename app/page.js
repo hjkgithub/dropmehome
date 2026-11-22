@@ -177,9 +177,7 @@ const [verificationLoading, setVerificationLoading] = useState(false);
   
   async function loadMyRequests() {
   try {
-    const response = await fetch("/api/requests", {
-      cache: "no-store",
-    });
+    const response = await fetch("/api/requests?mode=passenger", { cache: "no-store" })
 
     const data = await response.json();
 
@@ -217,9 +215,7 @@ const [verificationLoading, setVerificationLoading] = useState(false);
 
   async function loadJourneys() {
     try {
-      const response = await fetch("/api/journeys", {
-        cache: "no-store",
-      });
+      const response = await fetch(`/api/journeys?mode=${mode}`, { cache: "no-store" })
 
       const data = await response.json();
 
@@ -233,9 +229,7 @@ const [verificationLoading, setVerificationLoading] = useState(false);
 
   async function loadDriverRequests() {
     try {
-      const response = await fetch("/api/requests", {
-        cache: "no-store",
-      });
+      const response = await fetch("/api/requests?mode=driver", { cache: "no-store" })
 
       const data = await response.json();
 
@@ -252,34 +246,35 @@ const [verificationLoading, setVerificationLoading] = useState(false);
     }
   }
 
+
+
   useEffect(() => {
-  if (!user) return;
+  if (!user || !mode) return;
 
   loadJourneys();
 
-  if (user.role === "driver") {
+  if (mode === "driver") {
     loadDriverRequests();
   }
 
-  if (user.role === "passenger") {
+  if (mode === "passenger") {
     loadMyRequests();
   }
 
   const interval = setInterval(() => {
     loadJourneys();
 
-    if (user.role === "driver") {
+    if (mode === "driver") {
       loadDriverRequests();
     }
 
-    if (user.role === "passenger") {
+    if (mode === "passenger") {
       loadMyRequests();
     }
   }, 5000);
 
   return () => clearInterval(interval);
-}, [user]);
-
+}, [user, mode]);
   
 
 async function handleAuth() {
@@ -556,6 +551,22 @@ async function handleResendVerification() {
       setActionLoading(false);
     }
   }
+
+  function handleSelectMode(selectedMode) {
+  setMode(selectedMode);
+  setScreen("dashboard");
+  setSelectedJourney(null);
+}
+
+function handleSwitchMode() {
+  setMode(null);
+  setScreen("mode-selection");
+  setSelectedJourney(null);
+
+  setJourneys([]);
+  setDriverRequests([]);
+  setMyRequests([]);
+}
 
   if (checking) {
     return (
