@@ -974,6 +974,68 @@ function handleSwitchMode() {
 )}
 
 
+{/* MODE SELECTION */}
+{user && screen === "mode-selection" && (
+  <section style={{
+    maxWidth: "650px",
+    margin: "40px auto",
+    padding: "30px 20px",
+    background: "white",
+    borderRadius: "18px",
+    textAlign: "center",
+    boxShadow: "0 8px 30px rgba(24,55,95,0.08)",
+  }}>
+    <h2>Choose Your Mode</h2>
+
+    <p>How would you like to use Journey Share today?</p>
+
+    <div style={{
+      display: "grid",
+      gap: "18px",
+      marginTop: "25px",
+    }}>
+      <button
+        onClick={() => handleSelectMode("driver")}
+        style={{
+          padding: "22px",
+          borderRadius: "14px",
+          border: "none",
+          background: "#1769aa",
+          color: "white",
+          fontSize: "18px",
+          fontWeight: "bold",
+          cursor: "pointer",
+        }}
+      >
+        🚘 Rider Mode
+        <div style={{ fontSize: "13px", marginTop: "8px" }}>
+          Share journeys and manage passenger requests
+        </div>
+      </button>
+
+      <button
+        onClick={() => handleSelectMode("passenger")}
+        style={{
+          padding: "22px",
+          borderRadius: "14px",
+          border: "none",
+          background: "#13845b",
+          color: "white",
+          fontSize: "18px",
+          fontWeight: "bold",
+          cursor: "pointer",
+        }}
+      >
+        🧍 Passenger Mode
+        <div style={{ fontSize: "13px", marginTop: "8px" }}>
+          Find journeys and request seats
+        </div>
+      </button>
+    </div>
+  </section>
+)}
+
+
 
       {/* DRIVER DASHBOARD */}
       {user && mode === "driver" && screen === "dashboard" && (
