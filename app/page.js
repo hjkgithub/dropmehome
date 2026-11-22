@@ -7,6 +7,9 @@ import AuthForm from "./components/AuthForm";
 import DriverDashboard from "./components/DriverDashboard";
 import PassengerDashboard from "./components/PassengerDashboard";
 import RequestPopup from "./components/RequestPopup";
+import VisitorCounter from "./components/VisitorCounter";
+
+
 
 const styles = {
   page: {
@@ -845,6 +848,8 @@ function handleSwitchMode() {
             </div>
           </section>
 
+                
+      <VisitorCounter />
           <footer style={{
             textAlign: "center",
             padding: "25px 15px",
