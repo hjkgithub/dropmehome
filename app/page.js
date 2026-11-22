@@ -583,73 +583,73 @@ function handleSwitchMode() {
   return (
     <main style={styles.page}>
       {/* HEADER */}
-      <header style={styles.header}>
-        <h1 style={styles.brand}>🚘 Journey Share</h1>
+      
+{/* HEADER */}
+<header style={styles.header}>
+  <h1 style={styles.brand}>🚘 Journey Share</h1>
 
-       
+  <div>
+    {user ? (
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+        flexWrap: "wrap",
+      }}>
+        <span style={{ fontSize: "14px" }}>
+          Welcome, <strong>{user.name}</strong>
+        </span>
 
-user ? (
-  <div style={{ 
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    flexWrap: "wrap" 
-  }}>
-    <span style={{ fontSize: "14px" }}>
-      Welcome, <strong>{user.name}</strong>
-    </span>
-
-    {mode && (
-      <button
-        onClick={handleSwitchMode}
-        style={{
-          background: "#13845b",
-          color: "white",
-          border: "none",
-          padding: "10px 18px",
-          borderRadius: "8px",
-          cursor: "pointer",
-        }}
-      >
-        Switch Mode
-      </button>
-    )}
-
-    <button
-      onClick={handleLogout}
-      style={{
-        background: "#173b70",
-        color: "white",
-        border: "none",
-        padding: "10px 18px",
-        borderRadius: "8px",
-        cursor: "pointer",
-      }}
-    >
-      Logout
-    </button>
-  </div>
-) : screen === "auth" ? (
-
+        {mode && (
           <button
-            onClick={() => {
-              setScreen("home");
-              setAuthMessage("");
-            }}
+            onClick={handleSwitchMode}
             style={{
-              background: "white",
-              color: "#173b70",
-              border: "1px solid #d5dfed",
+              background: "#13845b",
+              color: "white",
+              border: "none",
               padding: "10px 18px",
               borderRadius: "8px",
               cursor: "pointer",
             }}
           >
-            ← Back
+            Switch Mode
           </button>
-        ) : null}
-          </div>
-      </header>
+        )}
+
+        <button
+          onClick={handleLogout}
+          style={{
+            background: "#173b70",
+            color: "white",
+            border: "none",
+            padding: "10px 18px",
+            borderRadius: "8px",
+            cursor: "pointer",
+          }}
+        >
+          Logout
+        </button>
+      </div>
+    ) : screen === "auth" ? (
+      <button
+        onClick={() => {
+          setScreen("home");
+          setAuthMessage("");
+        }}
+        style={{
+          background: "white",
+          color: "#173b70",
+          border: "1px solid #d5dfed",
+          padding: "10px 18px",
+          borderRadius: "8px",
+          cursor: "pointer",
+        }}
+      >
+        ← Back
+      </button>
+    ) : null}
+  </div>
+</header>
 
       {/* BEAUTIFUL HOME PAGE */}
       {!user && screen === "home" && (
