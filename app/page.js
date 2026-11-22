@@ -386,6 +386,7 @@ async function handleResendVerification() {
       });
 
       setUser(null);
+      setMode(null);
       setScreen("home");
       setDriverRequests([]);
       setJourneys([]);
@@ -585,27 +586,46 @@ function handleSwitchMode() {
       <header style={styles.header}>
         <h1 style={styles.brand}>🚘 Journey Share</h1>
 
-        {user ? (
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span style={{ fontSize: "14px" }}>
-              Welcome, <strong>{user.name}</strong>
-            </span>
+       
 
-            <button
-              onClick={handleLogout}
-              style={{
-                background: "#173b70",
-                color: "white",
-                border: "none",
-                padding: "10px 18px",
-                borderRadius: "8px",
-                cursor: "pointer",
-              }}
-            >
-              Logout
-            </button>
-          </div>
-        ) : screen === "auth" ? (
+user ? (
+  <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+    <span style={{ fontSize: "14px" }}>
+      Welcome, <strong>{user.name}</strong>
+    </span>
+
+    {mode && (
+      <button
+        onClick={handleSwitchMode}
+        style={{
+          background: "#13845b",
+          color: "white",
+          border: "none",
+          padding: "10px 18px",
+          borderRadius: "8px",
+          cursor: "pointer",
+        }}
+      >
+        Switch Mode
+      </button>
+    )}
+
+    <button
+      onClick={handleLogout}
+      style={{
+        background: "#173b70",
+        color: "white",
+        border: "none",
+        padding: "10px 18px",
+        borderRadius: "8px",
+        cursor: "pointer",
+      }}
+    >
+      Logout
+    </button>
+  </div>
+) : screen === "auth" ? (
+
           <button
             onClick={() => {
               setScreen("home");
