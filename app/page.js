@@ -221,7 +221,7 @@ const [verificationLoading, setVerificationLoading] = useState(false);
     checkSession();
   }, []);
 
-  async function loadJourneys() {
+  
   async function loadJourneys(selectedMode = mode) {
   if (!selectedMode) return;
 
