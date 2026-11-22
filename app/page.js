@@ -589,7 +589,12 @@ function handleSwitchMode() {
        
 
 user ? (
-  <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+  <div style={{ 
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    flexWrap: "wrap" 
+  }}>
     <span style={{ fontSize: "14px" }}>
       Welcome, <strong>{user.name}</strong>
     </span>
@@ -643,6 +648,7 @@ user ? (
             ← Back
           </button>
         ) : null}
+          </div>
       </header>
 
       {/* BEAUTIFUL HOME PAGE */}
