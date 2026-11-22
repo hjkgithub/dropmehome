@@ -174,20 +174,27 @@ const [verificationLoading, setVerificationLoading] = useState(false);
 );
   
 
-  
   async function loadMyRequests() {
+  if (mode !== "passenger") return;
+
   try {
-    const response = await fetch("/api/requests?mode=passenger", { cache: "no-store" })
+    const response = await fetch(
+      "/api/requests?mode=passenger",
+      { cache: "no-store" }
+    );
 
     const data = await response.json();
 
     if (response.ok) {
       setMyRequests(data.requests || []);
+    } else {
+      console.error("Passenger requests error:", data.error);
     }
   } catch (error) {
     console.error("Passenger request loading failed:", error);
   }
   }
+  
 
   useEffect(() => {
     async function checkSession() {
@@ -199,10 +206,11 @@ const [verificationLoading, setVerificationLoading] = useState(false);
         const data = await response.json();
 
         if (data.user) {
-          setUser(data.user);
-          setRole(data.user.role);
-          setScreen("dashboard");
+  setUser(data.user);
+  setMode(null);
+  setScreen("mode-selection");
         }
+        
       } catch (error) {
         console.error("Session check failed:", error);
       } finally {
@@ -214,38 +222,54 @@ const [verificationLoading, setVerificationLoading] = useState(false);
   }, []);
 
   async function loadJourneys() {
-    try {
-      const response = await fetch(`/api/journeys?mode=${mode}`, { cache: "no-store" })
+  async function loadJourneys(selectedMode = mode) {
+  if (!selectedMode) return;
 
-      const data = await response.json();
+  try {
+    const response = await fetch(
+      `/api/journeys?mode=${selectedMode}`,
+      { cache: "no-store" }
+    );
 
-      if (response.ok) {
-        setJourneys(data.journeys || []);
-      }
-    } catch (error) {
-      console.error("Journey loading failed:", error);
+    const data = await response.json();
+
+    if (response.ok) {
+      setJourneys(data.journeys || []);
+    } else {
+      console.error("Journey loading error:", data.error);
     }
+  } catch (error) {
+    console.error("Journey loading failed:", error);
+  }
   }
 
-  async function loadDriverRequests() {
-    try {
-      const response = await fetch("/api/requests?mode=driver", { cache: "no-store" })
 
-      const data = await response.json();
+    async function loadDriverRequests() {
+  if (mode !== "driver") return;
 
-      if (response.ok) {
-        setDriverRequests(data.requests || []);
-        setDriverRequestMessage("");
-      } else {
-        setDriverRequestMessage(
-          data.error || "Could not load requests."
-        );
-      }
-    } catch (error) {
-      setDriverRequestMessage("Could not load requests.");
+  try {
+    const response = await fetch(
+      "/api/requests?mode=driver",
+      { cache: "no-store" }
+    );
+
+    const data = await response.json();
+
+    if (response.ok) {
+      setDriverRequests(data.requests || []);
+      setDriverRequestMessage("");
+    } else {
+      setDriverRequestMessage(
+        data.error || "Could not load requests."
+      );
     }
+  } catch (error) {
+    console.error("Driver requests loading failed:", error);
+    setDriverRequestMessage("Could not load requests.");
   }
+    }
 
+  
 
 
   useEffect(() => {
