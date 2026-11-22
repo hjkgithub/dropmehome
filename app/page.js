@@ -241,10 +241,10 @@ const [verificationLoading, setVerificationLoading] = useState(false);
   } catch (error) {
     console.error("Journey loading failed:", error);
   }
-  }
+}
 
 
-    async function loadDriverRequests() {
+async function loadDriverRequests() {
   if (mode !== "driver") return;
 
   try {
